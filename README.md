@@ -1,17 +1,107 @@
-project_name: book Review app 
-technology: python 
-environment: virtual enviornment
-framework: django
-database: MySQL
+# 📚 Book Review App
 
+A simple Book Review web application built using **Python**, **Django**, and **MySQL**. Users can register, log in, submit book reviews, and view reviews submitted by other users. The project also includes REST APIs built with Django REST Framework (DRF), which are called using JavaScript Fetch API.
 
-built a model store book name, photo, url, reviews about book
-use django's built-in forms to create a form for users
-create a view for forms and a hoempage view after save the form users can see what they save.
-users can not direct jump to homepage first they must submit the review form.
+---
 
+## Technologies Used
 
-add user register, login, logout functionality. now user has to register -> login and fill up book review form after that they can see all users review.
-book review page and home page is protected by only logged-in user functionality.
+- Python
+- Django
+- Django REST Framework (DRF)
+- MySQL
+- HTML
+- CSS
+- JavaScript (Fetch API)
+- Virtual Environment (venv)
 
+---
 
+## Features
+
+- User Registration
+- User Login
+- User Logout
+- JWT Authentication
+- Book Review Form using Django Forms
+- Upload Book Image
+- Add Book URL
+- Give Rating and Review
+- View All Book Reviews
+- User Profile
+- Protected Pages and APIs
+
+---
+
+## Project Flow
+
+1. Register a new account.
+2. Login using your credentials.
+3. View all book reviews on the homepage.
+4. Submit a book review.
+5. View your profile.
+
+---
+
+## REST APIs
+
+- Register API
+- Login API
+- Homepage API
+- Profile API
+- JWT Token Refresh API
+
+All APIs are called using **JavaScript Fetch API**.
+
+---
+
+## Database
+
+MySQL is used to store:
+
+- Users
+- Books
+- Categories
+- Book Reviews
+
+---
+
+## Project Setup
+
+### Clone Repository
+
+```bash
+git clone <repository-url>
+```
+
+### Create Virtual Environment
+
+```bash
+python -m venv env
+```
+
+### Activate Virtual Environment
+
+**Windows**
+
+```bash
+env\Scripts\activate
+```
+
+### Apply Migrations
+
+```bash
+python manage.py migrate
+```
+
+### Run Server
+
+```bash
+python manage.py runserver
+```
+
+---
+
+## Author
+
+**Keyur Koshti**
