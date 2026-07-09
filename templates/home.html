@@ -3,40 +3,42 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>All Reviews</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Reviews</title>
+
     <link rel="stylesheet" href="{% static 'home.css' %}">
 </head>
 <body>
-    {% comment %} Main Header Section {% endcomment %}
+
+    <!-- Header -->
     <div class="main-header">
+
         <div class="left-section">
             <img src="{% static 'images/book_logo.jpg' %}" alt="Logo" class="logo">
-            <h1>Reviews</h1>
+            <h1>Book Reviews</h1>
         </div>
+
         <div class="right-section">
             <a href="{% url 'form_view' %}">
-                <button>+ Book Review</button>
+                <button>+ Add Review</button>
             </a>
+
             <a href="{% url 'profile' %}">
                 <button>Profile</button>
             </a>
-        </div>
-    </div>
-    {% comment %} Review By user {% endcomment %}
-    {% for review in reviews %}
-    <div class="review-card">
-        <h3>{{ review.book }}</h3>
-        {% if review.book_photo %}
-            <img src="{{ review.book_photo.url }}" alt="{{ review.book }}" width="150">
-        {% endif %}
-        <p><strong>Book Url:</strong> <a href="{{ review.book_url }}">{{ review.book_url }}</a></p>
-        <p><strong>Review:</strong> {{ review.book_review }}</p>
-        <p><em>Reviewed by: {{ review.user.username }}</em></p>
-    </div>
-    <hr>
-    {% empty %}
-        <p>No reviews yet.</p>
-    {% endfor %}
 
+            <button id="logout-btn">Logout</button>
+        </div>
+
+    </div>
+
+    <!-- Reviews will be loaded here -->
+    <div id="reviews-container">
+
+    </div>
+
+    <script src="{% static 'book_review_js/auth.js' %}"></script>
+    <script src="{% static 'book_review_js/homepage.js' %}"></script>
+    <script src="{% static 'book_review_js/logout.js' %}"></script>
 </body>
 </html>

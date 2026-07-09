@@ -14,21 +14,26 @@
   {% csrf_token %}
     <label>book_name:</label>
     {{form.book}}
-    {% comment %} <select name="book" id="bookSelect" required>
-      <option value="">Loading books...</option>
-    </select>  {% endcomment %}
-    {% comment %} <input type="text" name="book_name" required> {% endcomment %}
-    <br>   
+    <br>
     <label>book_photo:</label>
     <input type="file" name="book_photo" accept="image/*" required>
     <br>
     <label>book_url</label>
-    <input type="url" name="book_url" required>
+    <input type="url" name="book_url"  placeholder="https://example.com" required>
+    <br>
+    <label>Rating</label>
+      {{form.rating}}
     <br>
     <label>book_review:</label>
-    <textarea name="book_review" rows="4" cols="50" required></textarea>
+    <textarea name="book_review" rows="4" cols="50" placeholder="Write your opinion here" required></textarea>
     <br>    
-  <button type="submit">Save</button>
- </form>
+  {% comment %} <button type="submit">Save</button> {% endcomment %}
+  <div class="button-group">
+    <a href="{% url 'home' %}" class="back-btn">← Back to Home</a>
+    <button type="submit">Save</button>
+  </div>
+  </form>
+
+
 </body>
 </html>

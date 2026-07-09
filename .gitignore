@@ -4,3 +4,4 @@ db.sqlite3
 *.pyo
 book_photos
 data.json
+images

@@ -1,7 +1,8 @@
-/* form_view page */
+/* ------------------------------------form_view page-------------------------------------------- */
 body {
+    background-size: cover;
     font-family: Arial, sans-serif;
-    background-color: #f4f6f8;
+    /* background-color: #f4f6f8; */
     margin: 0;
     padding: 20px;
     animation: fadeInBody 0.6s ease-in;
@@ -11,13 +12,14 @@ body {
     from { opacity: 0; }
     to { opacity: 1; }
 }
-
+/* -------------------------------------heading style------------------------------------------- */
 h1 {
     text-align: center;
     color: #333;
     animation: slideDown 0.6s ease-out;
 }
 
+/* --------------------------------heading animations----------------------------------- */
 @keyframes slideDown {
     from {
         opacity: 0;
@@ -29,6 +31,7 @@ h1 {
     }
 }
 
+/* ------------------------------------------user form---------------------------------------------- */
 form {
     max-width: 500px;
     margin: 20px auto;
@@ -39,10 +42,11 @@ form {
     animation: fadeInForm 0.8s ease-in-out;
 }
 
+/* -----------------------------------user review form animation------------------------------------------- */
 @keyframes fadeInForm {
     from {
         opacity: 0;
-        transform: scale(0.95);
+        transform: scale(0.85);
     }
     to {
         opacity: 1;
@@ -50,6 +54,7 @@ form {
     }
 }
 
+/* -------------------------------------label tag style--------------------------------------- */
 label {
     display: block;
     margin-bottom: 6px;
@@ -57,6 +62,7 @@ label {
     color: #555;
 }
 
+/* ---------------------------input style---------------------------- */
 input[type="text"],
 input[type="url"],
 input[type="file"],
@@ -70,6 +76,7 @@ textarea {
     transition: border-color 0.3s, box-shadow 0.3s;
 }
 
+/* --------------------------input focus style border line color blue--------------------------------- */
 input[type="text"]:focus,
 input[type="url"]:focus,
 input[type="file"]:focus,
@@ -88,12 +95,14 @@ button {
     border-radius: 4px;
     font-size: 16px;
     cursor: pointer;
-    transition: background-color 0.3s, transform 0.2s;
+    transition: 
+        background-color 0.10s ease-in-out,
+        transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 button:hover {
     background-color: #0056b3;
-    transform: translateY(-2px);
+    transform: translateY(-4px);
 }
 
 button:active {
@@ -104,5 +113,83 @@ textarea {
     resize: vertical;
 }
 
-/* home page */
 
+
+/* ----------------------------------------Dropdown (Select) Styling---------------------------------------- */
+select {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #f9fbfd;
+    font-size: 14px;
+    cursor: pointer;
+
+    /* --------------------------------------remove default browser arrow----------------------------------------- */
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+
+    /* ------------------------------------------custom arrow----------------------------------------------- */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%23666' viewBox='0 0 16 16'%3E%3Cpath d='M1.5 5.5l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
+}
+
+/* ---------------------------------------------Hover---------------------------------------------- */
+select:hover {
+    border-color: #007bff;
+}
+
+/* --------------------------------------------Focus--------------------------------------------- */
+select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.4);
+    background-color: #ffffff;
+}
+
+/* -------------------------------- Button Group -------------------------------- */
+
+.button-group {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.button-group button,
+.button-group .back-btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 4px;
+    text-align: center;
+    text-decoration: none;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+/* Save Button */
+
+.button-group button {
+    background-color: #007bff;
+    color: white;
+}
+
+.button-group button:hover {
+    background-color: #0056b3;
+}
+
+/* Back Button */
+
+.back-btn {
+    background-color: #6c757d;
+    color: white;
+}
+
+.back-btn:hover {
+    background-color: #5a6268;
+}

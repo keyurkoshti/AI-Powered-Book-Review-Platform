@@ -3,9 +3,9 @@ function getCSRFToken() {
 }
 
 document.getElementById('registerform').addEventListener("submit", async function(event) {
-    event.preventDefault(); //stop refresh page
+    event.preventDefault(); 
 
-    const response = await fetch('/api/register/',{
+    const response = await fetch('/api/register',{
         method : "POST",
         headers : {
             "content-type" : "application/json",
@@ -26,6 +26,15 @@ document.getElementById('registerform').addEventListener("submit", async functio
         window.location.href = "/login/";
     }
     else {
-        document.getElementById('error').innerText = data.error || "somthing went wrong";
+        const parts = [];
+        if (data.error) parts.push(data.error);
+        if (data.username) parts.push(data.username);
+        if (data.email) parts.push(data.email);
+        if (data.password) parts.push(data.password);
+        if (data.password1) parts.push(data.password1);
+        if (data.password2) parts.push(data.password2);
+
+        document.getElementById('error').innerText = parts.length ? parts.join(" ") : "something went wrong";
     }
 });
+

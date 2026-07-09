@@ -4,7 +4,6 @@ from .models import Book_Review_forms, Book, Category
 from .forms import user_form
 from django.contrib.auth import authenticate, login, logout, get_user_model 
 from django.contrib.auth.decorators import login_required, user_passes_test
-# from rest_framework.views import APIView
 
 
 User = get_user_model()
@@ -37,26 +36,23 @@ def register_user(request):
     return render(request, "register.html")
 
 # ----------------------api call register page-----------------------------
-# def register_page(request):
-#     return render(request, "register.html")
+def register_page(request):
+    return render(request, "register.html")
 
 # ---------------- Login User ----------------
 def login_user(request):
     if request.method == "POST":
-        username = request.POST['username']
-        password = request.POST['password']
-
-        user = authenticate(request, username=username, password=password)
-
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(username=username, password=password)
         if user is not None:
             login(request, user)
-            request.session.set_expiry(900)
-            return redirect('home') 
-        else:
-            messages.error(request, "Invalid credentials")
-            return render(request, 'login.html')
+            return redirect('home')
+        messages.error(request, "Invalid credentials")
+        return render(request, "login.html")
 
-    return render(request, 'login.html')  
+    return render(request, "login.html")
+
 
 
 # ---------------- Logout User ----------------
@@ -67,7 +63,6 @@ def logout_user(request):
 
 
 # ---------------- Book Review Form ----------------
-@login_required(login_url='login')
 def form_view(request):
     if request.method == 'POST':
         form = user_form(request.POST, request.FILES)
@@ -83,10 +78,9 @@ def form_view(request):
 
 
 # ---------------- Home page ----------------
-@login_required(login_url='login')
 def home(request):
-    reviews = Book_Review_forms.objects.all().order_by('-id')
-    return render(request, 'home.html', {'reviews': reviews})   
+    reviews = Book_Review_forms.objects.select_related('user', 'book').all().order_by('-id')
+    return render(request, 'home.html', {'reviews': reviews})
 
 
 # --------------------Book Info------------------------
@@ -123,13 +117,5 @@ def book_info(request):
 
 
 # ----------------------------------User Profile-----------------------------------
-@login_required(login_url='login')
 def profile_view(request):
-    user = request.user
-    reviews_count = Book_Review_forms.objects.filter(user=user).count()
-
-    detail = {
-        "username": user,
-        "reviews_count": reviews_count
-    }
-    return render(request, 'profile.html', detail)
+    return render(request, 'profile.html')

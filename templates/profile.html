@@ -1,20 +1,33 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile</title>
-</head>
-<body>
-    <h2>User Profile</h2>
+    <head>
+        <meta charset="UTF-8">
+        <title>Profile</title>
 
-    <p><strong>Username:</strong> {{ username.username }}</p>
-    <p><strong>Email:</strong> {{ username.email }}</p>
-    <p><strong>Date Joined:</strong> {{ username.date_joined }}</p>
-    <p><strong>Total Reviews:</strong> {{ reviews_count }}</p>
+        <link rel="stylesheet" href="{% static 'profile.css' %}">
+    </head>
+    <body>
+        <div class="profile-container">
+            
+            <h2>User Profile</h2>
 
-    <hr>
-    <a href="{% url 'home' %}">Back to Home</a>
-</body>
+                <p><strong>Username:</strong> <span id="username"></span></p>
+
+                <p><strong>Email:</strong> <span id="email"></span></p>
+
+                <p><strong>Date Joined:</strong> <span id="date_joined"></span></p>
+
+                <p><strong>Total Reviews:</strong> <span id="reviews_count"></span></p>
+
+                <hr>
+
+                <a href="{% url 'home' %}" class="back-btn">← Back to Home</a>
+
+        </div>
+
+        <script src="{% static 'book_review_js/auth.js' %}"></script>
+        <script src="{% static 'book_review_js/profile.js' %}"></script>
+
+    </body>
 </html>

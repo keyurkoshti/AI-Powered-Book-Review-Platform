@@ -4,7 +4,7 @@ from .models import Book_Review_forms, Book, Category
 
 
 class BookReviewAdmin(admin.ModelAdmin):
-    list_display = ('book', 'book_url', 'book_review')  # columns in list view
+    list_display = ('book', 'book_url', 'rating', 'book_review')  # columns in list view
     search_fields = ('book',)  # search bar by book_name
     list_filter = ('book',)    # filter by book_name
 

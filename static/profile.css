@@ -1,0 +1,62 @@
+/* -------------------------------- General Page -------------------------------- */
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: #f9f9f9;
+    color: #333;
+}
+
+/* -------------------------------- Profile Card -------------------------------- */
+
+.profile-container {
+    width: 500px;
+    margin: 60px auto;
+    background-color: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* -------------------------------- Heading -------------------------------- */
+
+.profile-container h2 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 30px;
+}
+
+/* -------------------------------- User Details -------------------------------- */
+
+.profile-container p {
+    font-size: 18px;
+    margin: 15px 0;
+}
+
+.profile-container strong {
+    color: #2c3e50;
+}
+
+/* -------------------------------- Divider -------------------------------- */
+
+hr {
+    margin: 25px 0;
+    border: none;
+    border-top: 1px solid #ddd;
+}
+
+/* -------------------------------- Back Button -------------------------------- */
+
+.back-btn {
+    display: inline-block;
+    text-decoration: none;
+    background-color: #007bff;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 5px;
+}
+
+.back-btn:hover {
+    background-color: #0056b3;
+}
