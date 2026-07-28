@@ -43,17 +43,6 @@ All APIs are called using **JavaScript Fetch API**.
 
 ---
 
-## Database
-
- UsersAI
-- BooksAI
-- CategorieAPI
-- BAPI
--#I
-
-```bash
-git clone <repository-url>
-```
 
 ### Create Virtual Environment
 
@@ -61,17 +50,15 @@ git clone <repository-url>
 python -m venv env
 ```
 
-### Activate Virtual Environment
-
-**Windows**
-
+### Apply Migration to Database
 ```bash
-env\Scripts\activate
+python manage.py migrate
 ```
 
 ### Run Server
 
-```bashe.py runserver
+```bash
+python manage.py runserver
 ```
 
 ---
