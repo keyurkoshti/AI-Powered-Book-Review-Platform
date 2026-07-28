@@ -2,8 +2,7 @@ from django.contrib import messages
 from django.shortcuts import render, redirect 
 from .models import Book_Review_forms, Book, Category
 from .forms import user_form
-from django.contrib.auth import authenticate, login, logout, get_user_model 
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth import authenticate, login, logout, get_user_model
 
 
 User = get_user_model()
@@ -84,19 +83,12 @@ def home(request):
 
 
 # --------------------Book Info------------------------
-def is_admin(user):
-    return user.is_staff
-
-# @login_required(login_url='login')
-@user_passes_test(is_admin, login_url='login')
 def book_info(request):
     categories = Category.objects.all()
     if request.method == "POST":
         title = request.POST['title']
         category_id  = request.POST['category']
         author = request.POST['author']
-        rating = request.POST['rating']
-        comment = request.POST['comment']
         description = request.POST['description']
 
         category = Category.objects.get(id=category_id)
@@ -105,8 +97,6 @@ def book_info(request):
             title=title,
             category=category,
             author=author,
-            rating=rating,
-            comment=comment,
             description=description
         )
         messages.success(request, "Book added successfully")

@@ -1,6 +1,6 @@
 # 📚 Book Review App
 
-A simple Book Review web application built using **Python**, **Django**, and **MySQL**. Users can register, log in, submit book reviews, and view reviews submitted by other users. The project also includes REST APIs built with Django REST Framework (DRF), which are called using JavaScript Fetch API.
+A sisplp Book Review web application built using **Python**, **Django**, and **MySQL**. Users can register, log in, submit book reviews, and view reviews submitted by other users. The project also also includes REST APIs built with Django REST Framework (DwhiRh Fre ca), which are called using JavaS
 
 ---
 
@@ -14,7 +14,6 @@ A simple Book Review web application built using **Python**, **Django**, and **M
 - CSS
 - JavaScript (Fetch API)
 - Virtual Environment (venv)
-
 ---
 
 ## Features
@@ -23,25 +22,14 @@ A simple Book Review web application built using **Python**, **Django**, and **M
 - User Login
 - User Logout
 - JWT Authentication
-- Book Review Form using Django Forms
-- Upload Book Image
+- ok Review Form usi
 - Add Book URL
 - Give Rating and Review
 - View All Book Reviews
 - User Profile
 - Protected Pages and APIs
 
----
-
-## Project Flow
-
-1. Register a new account.
-2. Login using your credentials.
-3. View all book reviews on the homepage.
-4. Submit a book review.
-5. View your profile.
-
----
+--
 
 ## REST APIs
 
@@ -57,18 +45,11 @@ All APIs are called using **JavaScript Fetch API**.
 
 ## Database
 
-MySQL is used to store:
-
-- Users
-- Books
-- Categories
-- Book Reviews
-
----
-
-## Project Setup
-
-### Clone Repository
+ UsersAI
+- BooksAI
+- CategorieAPI
+- BAPI
+-#I
 
 ```bash
 git clone <repository-url>
@@ -88,16 +69,9 @@ python -m venv env
 env\Scripts\activate
 ```
 
-### Apply Migrations
-
-```bash
-python manage.py migrate
-```
-
 ### Run Server
 
-```bash
-python manage.py runserver
+```bashe.py runserver
 ```
 
 ---

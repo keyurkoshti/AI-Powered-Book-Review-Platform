@@ -1,15 +1,8 @@
 async function loadProfile() {
 
-    let token = localStorage.getItem("access_token");
-
-    if (!token) {
-        window.location.href = "/login/";
-        return;
-    }
-
     let response = await fetch("/api/profile/", {
         headers: {
-            "Authorization": `Bearer ${token}`
+            "Content-Type": "application/json"
         }
     });
 
@@ -18,16 +11,14 @@ async function loadProfile() {
         const refreshed = await refreshAccessToken();
 
         if (!refreshed) {
-            localStorage.clear();
             window.location.href = "/login/";
             return;
         }
 
-        token = localStorage.getItem("access_token");
-
+        // Retry request with new token (automatically sent via cookie)
         response = await fetch("/api/profile/", {
             headers: {
-                "Authorization": `Bearer ${token}`
+                "Content-Type": "application/json"
             }
         });
     }
@@ -44,4 +35,3 @@ async function loadProfile() {
 }
 
 loadProfile();
-

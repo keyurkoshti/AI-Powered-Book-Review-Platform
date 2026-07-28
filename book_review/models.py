@@ -20,8 +20,6 @@ class Book(models.Model):
     title = models.CharField(max_length=100)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
     author = models.CharField(max_length=100)
-    rating = models.IntegerField()
-    comment = models.TextField()
     description = models.TextField()
 
     def __str__(self):

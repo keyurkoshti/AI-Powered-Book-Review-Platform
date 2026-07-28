@@ -1,28 +1,18 @@
 async function refreshAccessToken() {
 
-    const refreshToken = localStorage.getItem("refresh_token");
-
-    if (!refreshToken) {
-        return false;
-    }
-
-    const response = await fetch("/api/token/refresh/", {
+    // The refresh token is stored in an HttpOnly cookie, automatically sent with requests.
+    // The backend's cookie-refresh endpoint handles reading it from the cookie.
+    const response = await fetch("/api/token/cookie-refresh/", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            refresh: refreshToken
-        })
+        }
     });
 
     if (!response.ok) {
         return false;
     }
 
-    const data = await response.json();
-
-    localStorage.setItem("access_token", data.access);
-
+    // New access token is set as HttpOnly cookie by the backend
     return true;
 }

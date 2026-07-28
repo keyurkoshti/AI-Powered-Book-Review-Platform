@@ -4,36 +4,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Book Review Form</title>
     <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}">
 
 </head>
 <body>
- <h1>Book_Review Form</h1>
- <form method='POST' enctype='multipart/form-data'>
-  {% csrf_token %}
-    <label>book_name:</label>
-    {{form.book}}
+ <h1>Book Review Form</h1>
+ <form id="review-form" enctype="multipart/form-data">
+    {% csrf_token %}
+    <label>Book:</label>
+    <select id="book-select" required>
+        <option value="">Loading books...</option>
+    </select>
     <br>
-    <label>book_photo:</label>
-    <input type="file" name="book_photo" accept="image/*" required>
+    <label>Book Photo:</label>
+    <input type="file" id="book_photo" name="book_photo" accept="image/*" required>
     <br>
-    <label>book_url</label>
-    <input type="url" name="book_url"  placeholder="https://example.com" required>
+    <label>Book URL:</label>
+    <input type="url" id="book_url" name="book_url" placeholder="https://example.com" required>
     <br>
-    <label>Rating</label>
-      {{form.rating}}
+    <label>Rating:</label>
+    <select id="rating" required>
+        <option value="">Select Rating...</option>
+        <option value="1">⭐</option>
+        <option value="2">⭐⭐</option>
+        <option value="3">⭐⭐⭐</option>
+        <option value="4">⭐⭐⭐⭐</option>
+        <option value="5">⭐⭐⭐⭐⭐</option>
+    </select>
     <br>
-    <label>book_review:</label>
-    <textarea name="book_review" rows="4" cols="50" placeholder="Write your opinion here" required></textarea>
+    <label>Review:</label>
+    <textarea id="book_review" name="book_review" rows="4" cols="50" placeholder="Write your opinion here" required></textarea>
     <br>    
-  {% comment %} <button type="submit">Save</button> {% endcomment %}
   <div class="button-group">
     <a href="{% url 'home' %}" class="back-btn">← Back to Home</a>
     <button type="submit">Save</button>
   </div>
   </form>
 
+  <p id="error" style="color: red;"></p>
+
+  <script src="{% static 'book_review_js/auth.js' %}"></script>
+  <script src="{% static 'book_review_js/review_form.js' %}"></script>
 
 </body>
 </html>

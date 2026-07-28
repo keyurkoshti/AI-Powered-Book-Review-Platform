@@ -9,44 +9,31 @@
 <body>
 
 <div class="container">
-    {% csrf_token %}
     <h2>Add Book Information</h2>
 
-    {% if messages %}
-        {% for message in messages %}
-            <p class="error">{{ message }}</p>
-        {% endfor %}
-    {% endif %}
+    <p id="error" style="color: red;"></p>
 
-    <form method="POST">
+    <form id="add-book-form">
         {% csrf_token %}
 
         <label>Title</label>
-        <input type="text" name="title" required>
+        <input type="text" id="title" name="title" required>
 
         <label>Category</label>
-        <select name="category" required>
-            <option value="">Select Category</option>
-            {% for cat in categories %}
-                <option value="{{ cat.id }}">{{ cat.name }}</option>
-            {% endfor %}
-        </select>
+        <input type="text" id="category" name="category" placeholder="e.g. Fiction, Non-Fiction" required>
 
         <label>Author</label>
-        <input type="text" name="author" required>
-
-        <label>Rating</label>
-        <input type="number" name="rating" min="1" max="5" required>
-
-        <label>Comment</label>
-        <textarea name="comment" rows="3"></textarea>
+        <input type="text" id="author" name="author" required>
 
         <label>Description</label>
-        <textarea name="description" rows="4"></textarea>
+        <textarea id="description" name="description" rows="4"></textarea>
 
         <button type="submit">Save Book</button>
     </form>
 </div>
+
+<script src="{% static 'book_review_js/auth.js' %}"></script>
+<script src="{% static 'book_review_js/add_book.js' %}"></script>
 
 </body>
 </html>

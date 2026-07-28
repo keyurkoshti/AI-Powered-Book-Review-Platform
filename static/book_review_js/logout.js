@@ -4,8 +4,6 @@ document.getElementById("logout-btn").addEventListener("click", async function (
         method: "POST"
     });
 
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-
+    // Cookies are cleared by the backend on logout
     window.location.href = "/login/";
 });

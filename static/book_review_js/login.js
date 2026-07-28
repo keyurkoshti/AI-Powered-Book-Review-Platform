@@ -16,9 +16,7 @@ document.getElementById("loginform").addEventListener("submit", async function (
         const data = await response.json();
 
         if (response.ok) {
-            localStorage.setItem("access_token", data.access_token);
-            localStorage.setItem("refresh_token", data.refresh_token);
-
+            // Token is set as HttpOnly cookie by the backend — no localStorage needed
             window.location.href = "/home/";
         } else {
             document.getElementById("error").innerText =
@@ -29,4 +27,3 @@ document.getElementById("loginform").addEventListener("submit", async function (
             "Unable to connect to the server.";
     }
 });
-

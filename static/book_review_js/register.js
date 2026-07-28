@@ -2,6 +2,49 @@ function getCSRFToken() {
     return document.querySelector('[name=csrfmiddlewaretoken]').value;
 }
 
+// Toast notification function
+function showToast(message, type = 'success') {
+    // Remove existing toast if any
+    const existing = document.querySelector('.toast-notification');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    toast.textContent = message;
+    
+    const bgColor = type === 'success' ? '#4CAF50' : '#f44336';
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${bgColor};
+        color: white;
+        padding: 16px 24px;
+        border-radius: 8px;
+        font-size: 15px;
+        font-family: Arial, sans-serif;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+        z-index: 9999;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.4s ease;
+    `;
+    document.body.appendChild(toast);
+
+    // Animate in
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
+    });
+
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => toast.remove(), 400);
+    }, 3000);
+}
+
 document.getElementById('registerform').addEventListener("submit", async function(event) {
     event.preventDefault(); 
 
@@ -22,8 +65,10 @@ document.getElementById('registerform').addEventListener("submit", async functio
     const data = await response.json()
 
     if (response.ok){
-        alert("registration successful");
-        window.location.href = "/login/";
+        showToast('✅ Registration successful!', 'success');
+        setTimeout(() => {
+            window.location.href = "/login/";
+        }, 1500);
     }
     else {
         const parts = [];
@@ -34,7 +79,9 @@ document.getElementById('registerform').addEventListener("submit", async functio
         if (data.password1) parts.push(data.password1);
         if (data.password2) parts.push(data.password2);
 
-        document.getElementById('error').innerText = parts.length ? parts.join(" ") : "something went wrong";
+        const errorMsg = parts.length ? parts.join(" ") : "something went wrong";
+        showToast('❌ ' + errorMsg, 'error');
+        document.getElementById('error').innerText = errorMsg;
     }
 });
 

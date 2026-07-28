@@ -5,3 +5,5 @@ db.sqlite3
 book_photos
 data.json
 images
+.env
+TODO.md

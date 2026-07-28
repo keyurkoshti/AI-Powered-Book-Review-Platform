@@ -1,35 +1,25 @@
 async function loadReviews() {
 
-    let token = localStorage.getItem("access_token");
-
-    if (!token) {
-        window.location.href = "/login/";
-        return;
-    }
-
     let response = await fetch("/api/home/", {
         headers: {
-            "Authorization": `Bearer ${token}`
+            "Content-Type": "application/json"
         }
     });
 
-    // Access token expired
+    // Access token expired - try refreshing via cookie
     if (response.status === 401) {
 
         const refreshed = await refreshAccessToken();
 
         if (!refreshed) {
-            localStorage.clear();
             window.location.href = "/login/";
             return;
         }
 
-        token = localStorage.getItem("access_token");
-
-        // Retry request with new token
+        // Retry request with new token (automatically sent via cookie)
         response = await fetch("/api/home/", {
             headers: {
-                "Authorization": `Bearer ${token}`
+                "Content-Type": "application/json"
             }
         });
     }
