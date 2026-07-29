@@ -1,6 +1,6 @@
 # 📚 Book Review App
 
-A sisplp Book Review web application built using **Python**, **Django**, and **MySQL**. Users can register, log in, submit book reviews, and view reviews submitted by other users. The project also also includes REST APIs built with Django REST Framework (DwhiRh Fre ca), which are called using JavaS
+A simple Book Review web application built using **Python**, **Django**, and **MySQL**. Users can register, log in, submit book reviews, and view reviews submitted by other users. The project also includes REST APIs built with Django REST Framework (DRF), which are called using JavaScript Fetch API.
 
 ---
 
@@ -14,7 +14,6 @@ A sisplp Book Review web application built using **Python**, **Django**, and **M
 - CSS
 - JavaScript (Fetch API)
 - Virtual Environment (venv)
----
 
 ## Features
 
@@ -22,14 +21,15 @@ A sisplp Book Review web application built using **Python**, **Django**, and **M
 - User Login
 - User Logout
 - JWT Authentication
-- ok Review Form usi
+- Book Review Form
 - Add Book URL
 - Give Rating and Review
 - View All Book Reviews
 - User Profile
 - Protected Pages and APIs
+- Profanity Filtering — Blocks inappropriate/abusive language in reviews using `better-profanity`
 
---
+---
 
 ## REST APIs
 
@@ -38,11 +38,6 @@ A sisplp Book Review web application built using **Python**, **Django**, and **M
 - Homepage API
 - Profile API
 - JWT Token Refresh API
-
-All APIs are called using **JavaScript Fetch API**.
-
----
-
 
 ### Create Virtual Environment
 
@@ -60,9 +55,3 @@ python manage.py migrate
 ```bash
 python manage.py runserver
 ```
-
----
-
-## Author
-
-**Keyur Koshti**

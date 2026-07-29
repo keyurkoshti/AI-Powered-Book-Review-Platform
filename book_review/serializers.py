@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import Book_Review_forms, Book, Category
+from better_profanity import profanity
 
 User = get_user_model()
 
@@ -71,6 +72,11 @@ class CreateReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Book_Review_forms
         fields = ['book', 'book_photo', 'book_url', 'rating', 'book_review']
+
+    def validate_book_review(self, value):
+        if profanity.contains_profanity(value):
+            raise serializers.ValidationError("Review contains inappropriate language. Please remove any offensive words.")
+        return value
 
     def validate_rating(self, value):
         if value < 1 or value > 5:

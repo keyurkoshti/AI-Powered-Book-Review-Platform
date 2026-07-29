@@ -1,5 +1,6 @@
 from django import forms 
 from .models import Book_Review_forms
+from better_profanity import profanity
 
 RATING_CHOICES = (
     (1, "⭐"),
@@ -28,6 +29,12 @@ class user_form(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['book'].empty_label = "Select Book..."
+
+    def clean_book_review(self):
+        review = self.cleaned_data['book_review']
+        if profanity.contains_profanity(review):
+            raise forms.ValidationError("Review contains inappropriate language. Please remove any offensive words.")
+        return review
 
     def clean_rating(self):
         rating = int(self.cleaned_data['rating'])
