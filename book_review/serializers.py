@@ -1,9 +1,7 @@
 from rest_framework import serializers
-from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
 from .models import Book_Review_forms, Book, Category
 from better_profanity import profanity
-
-User = get_user_model()
 
 
 class RegisterSerializer(serializers.Serializer):

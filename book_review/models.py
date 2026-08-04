@@ -41,4 +41,22 @@ class Book_Review_forms(models.Model):
     def __str__(self):
         return f"{self.book} - {self.user}"
 
+
+class RefreshTokenStore(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="refresh_token_store"
+    )
+    refresh_token = models.TextField()
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.user.username}"
+
+    def is_valid(self):
+        return timezone.now() < self.expires_at
+    
+
     

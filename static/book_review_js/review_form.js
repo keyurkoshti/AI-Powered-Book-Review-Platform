@@ -1,19 +1,13 @@
 // Load books into the dropdown on page load
 async function loadBooks() {
     try {
-        const response = await fetch("/api/books/", {
+        const response = await fetchWithAuth("/api/books/", {
             headers: {
                 "Content-Type": "application/json"
             }
         });
 
-        if (response.status === 401) {
-            const refreshed = await refreshAccessToken();
-            if (!refreshed) {
-                window.location.href = "/login/";
-                return;
-            }
-        }
+        if (!response) return; // redirected to login
 
         if (!response.ok) {
             document.getElementById("book-select").innerHTML =
@@ -50,18 +44,12 @@ document.getElementById("review-form").addEventListener("submit", async function
     formData.append("book_review", document.getElementById("book_review").value);
 
     try {
-        const response = await fetch("/api/reviews/", {
+        const response = await fetchWithAuth("/api/reviews/", {
             method: "POST",
             body: formData
         });
 
-        if (response.status === 401) {
-            const refreshed = await refreshAccessToken();
-            if (!refreshed) {
-                window.location.href = "/login/";
-                return;
-            }
-        }
+        if (!response) return; // redirected to login
 
         const data = await response.json();
 

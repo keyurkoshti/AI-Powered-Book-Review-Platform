@@ -1,19 +1,13 @@
 // Load categories into the category input as a datalist
 async function loadCategories() {
     try {
-        const response = await fetch("/api/categories/", {
+        const response = await fetchWithAuth("/api/categories/", {
             headers: {
                 "Content-Type": "application/json"
             }
         });
 
-        if (response.status === 401) {
-            const refreshed = await refreshAccessToken();
-            if (!refreshed) {
-                window.location.href = "/login/";
-                return;
-            }
-        }
+        if (!response) return; // redirected to login
 
         if (!response.ok) {
             return;
@@ -55,7 +49,7 @@ const formData = {
     };
 
     try {
-        const response = await fetch("/api/add-book/", {
+        const response = await fetchWithAuth("/api/add-book/", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -63,32 +57,7 @@ const formData = {
             body: JSON.stringify(formData)
         });
 
-        // Access token expired - try refreshing via cookie
-        if (response.status === 401) {
-            const refreshed = await refreshAccessToken();
-            if (!refreshed) {
-                window.location.href = "/login/";
-                return;
-            }
-
-            // Retry request with new token (automatically sent via cookie)
-            const retryResponse = await fetch("/api/add-book/", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(formData)
-            });
-
-            const retryData = await retryResponse.json();
-            if (retryResponse.ok) {
-                alert("Book added successfully!");
-                window.location.href = "/form/";
-            } else {
-                document.getElementById("error").innerText = retryData.error || "Failed to add book.";
-            }
-            return;
-        }
+        if (!response) return; // redirected to login
 
         const data = await response.json();
         if (response.ok) {

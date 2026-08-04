@@ -1,26 +1,16 @@
 async function loadProfile() {
 
-    let response = await fetch("/api/profile/", {
+    const response = await fetchWithAuth("/api/profile/", {
         headers: {
             "Content-Type": "application/json"
         }
     });
 
-    if (response.status === 401) {
+    if (!response) return; // redirected to login
 
-        const refreshed = await refreshAccessToken();
-
-        if (!refreshed) {
-            window.location.href = "/login/";
-            return;
-        }
-
-        // Retry request with new token (automatically sent via cookie)
-        response = await fetch("/api/profile/", {
-            headers: {
-                "Content-Type": "application/json"
-            }
-        });
+    if (!response.ok) {
+        window.location.href = "/login/";
+        return;
     }
 
     const data = await response.json();

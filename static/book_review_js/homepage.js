@@ -1,28 +1,12 @@
 async function loadReviews() {
 
-    let response = await fetch("/api/home/", {
+    const response = await fetchWithAuth("/api/home/", {
         headers: {
             "Content-Type": "application/json"
         }
     });
 
-    // Access token expired - try refreshing via cookie
-    if (response.status === 401) {
-
-        const refreshed = await refreshAccessToken();
-
-        if (!refreshed) {
-            window.location.href = "/login/";
-            return;
-        }
-
-        // Retry request with new token (automatically sent via cookie)
-        response = await fetch("/api/home/", {
-            headers: {
-                "Content-Type": "application/json"
-            }
-        });
-    }
+    if (!response) return; // redirected to login
 
     if (!response.ok) {
         alert("Unable to load reviews.");

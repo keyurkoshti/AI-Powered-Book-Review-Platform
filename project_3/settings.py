@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
+    'rest_framework_simplejwt.token_blacklist',
     'book_review',
 ]
 
@@ -149,9 +150,11 @@ REST_FRAMEWORK = {
 
 # --------------------------jwt refresh token------------------------------
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME" : timedelta(minutes=15),
-    "REFRESH_TOKEN_LIFETIME" : timedelta(days=1),
-    "AUTH_HEADER_TYPES" : ('Bearer',"bearer"),
+    "ACCESS_TOKEN_LIFETIME" : timedelta(minutes=1),
+    "REFRESH_TOKEN_LIFETIME" : timedelta(days=7),
+    "AUTH_HEADER_TYPES" : ('Bearer',),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
 }
 # -------------------------------Gamil Notification---------------------------------
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
