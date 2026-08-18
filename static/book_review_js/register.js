@@ -2,7 +2,6 @@ function getCSRFToken() {
     return document.querySelector('[name=csrfmiddlewaretoken]').value;
 }
 
-// Toast notification function
 function showToast(message, type = 'success') {
     // Remove existing toast if any
     const existing = document.querySelector('.toast-notification');
@@ -57,8 +56,8 @@ document.getElementById('registerform').addEventListener("submit", async functio
         body: JSON.stringify({
             username : document.getElementById('username').value,
             email: document.getElementById('email').value,
-            password1: document.getElementById('password1').value,
-            password2: document.getElementById('password2').value,
+            password: document.getElementById('password').value,
+            // password2: document.getElementById('password2').value,
         })
     });
 
@@ -68,7 +67,7 @@ document.getElementById('registerform').addEventListener("submit", async functio
         showToast('✅ Registration successful!', 'success');
         setTimeout(() => {
             window.location.href = "/login/";
-        }, 1500);
+        }, 1000);
     }
     else {
         const parts = [];
@@ -76,8 +75,8 @@ document.getElementById('registerform').addEventListener("submit", async functio
         if (data.username) parts.push(data.username);
         if (data.email) parts.push(data.email);
         if (data.password) parts.push(data.password);
-        if (data.password1) parts.push(data.password1);
-        if (data.password2) parts.push(data.password2);
+        // if (data.password) parts.push(data.password);
+        // if (data.password2) parts.push(data.password2);
 
         const errorMsg = parts.length ? parts.join(" ") : "something went wrong";
         showToast('❌ ' + errorMsg, 'error');

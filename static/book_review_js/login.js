@@ -16,7 +16,6 @@ document.getElementById("loginform").addEventListener("submit", async function (
         const data = await response.json();
 
         if (response.ok) {
-            // Token is set as HttpOnly cookie by the backend — no localStorage needed
             window.location.href = "/home/";
         } else {
             document.getElementById("error").innerText =

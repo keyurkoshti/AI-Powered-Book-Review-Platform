@@ -1,5 +1,5 @@
 /* Background */
-body {
+/* body {
     margin: 0;
     font-family: Arial, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -7,36 +7,36 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-}
+} */
 
 /* Center content */
-.register-container {
+/* .register-container {
     width: 100%;
     max-width: 400px;
     text-align: center;
     background: #fff;
-    padding: 40px 30px;
+    padding: 10px 20px 10px 10px;
     border-radius: 12px;
     box-shadow: 0 6px 15px rgba(0,0,0,0.2);
-}
+} */
 
 /* Heading */
-h2 {
+/* h2 {
     margin-bottom: 20px;
     font-size: 36px;
     font-weight: bold;
     color: #333;
-}
+} */
 
 /* Form box */
-form {
+/* form {
     display: flex;
     flex-direction: column;
     align-items: center;
-}
+} */
 
 /* Input fields */
-input {
+/* input {
     width: 100%;
     padding: 12px;
     margin: 8px 0;
@@ -44,10 +44,10 @@ input {
     border-radius: 6px;
     font-size: 14px;
     box-sizing: border-box;
-}
+} */
 
 /* Button group */
-.button-group {
+/* .button-group {
     display: flex;
     gap: 10px;
     margin-top: 15px;
@@ -90,10 +90,689 @@ input {
     background: #45a049;
     text-decoration: none;
     color: white;
-}
+} */
 
 /* Error messages */
-p[style] {
+/* p[style] {
     color: red !important;
     margin-top: 10px;
+} */
+
+
+
+/* =====================================================
+   RESET
+===================================================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+/* =====================================================
+   BODY
+===================================================== */
+
+html,
+body {
+    width: 100%;
+    min-height: 100%;
+}
+
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: #f8f7fb;
+    color: #1d1d2e;
+    overflow-x: hidden;
+}
+
+
+/* =====================================================
+   MAIN LAYOUT
+===================================================== */
+
+.register-page {
+    width: 100%;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 55% 45%;
+}
+
+
+/* =====================================================
+   LEFT SIDE
+===================================================== */
+
+.book-section {
+    position: relative;
+    min-height: 80vh;
+    overflow: hidden;
+    background-image: url("/static/registerpage_image/Gemini_Generated_Image_1ydmrk1ydmrk1ydm.png");
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+}
+
+
+/* =====================================================
+   LEFT IMAGE OVERLAY
+===================================================== */
+
+.book-overlay {
+    position: absolute;
+    inset: 0;
+    /* background: 
+        radial-gradient(
+            circle at 20% 50%,
+            rgba(236, 237, 243, 0.88) 0%,
+            rgba(247, 247, 249, 0.65) 60%,
+            rgba(242, 242, 246, 0.45) 100%
+        ),
+        linear-gradient(
+            180deg,
+            rgba(252, 252, 253, 0.75) 0%,
+            rgba(251, 251, 253, 0.3) 50%,
+            rgba(244, 245, 247, 0.8) 100%
+        ); */
+    z-index: 1;
+}
+
+/* Soft vignette behind the hero copy for extra contrast
+   regardless of what's happening in the photo underneath */
+   .book-content::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        550px 380px at 15% 45%,
+        rgba(10, 10, 22, 0.70) 0%,
+        rgba(10, 10, 22, 0) 100%
+    );
+    z-index: -1;
+}
+
+
+/* =====================================================
+   LEFT CONTENT
+===================================================== */
+
+.book-content {
+    position: relative;
+    z-index: 2;
+    min-height: 100vh;
+    padding: 45px 55px 35px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: white;
+}
+
+
+/* =====================================================
+   LOGO
+===================================================== */
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+}
+
+.logo-icon,
+.mobile-logo .logo-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #6044ed, #8467ff);
+    box-shadow: 0 8px 22px rgba(96, 68, 237, 0.35);
+    flex-shrink: 0;
+}
+
+.logo-icon svg,
+.mobile-logo .logo-icon svg {
+    width: 24px;
+    height: 24px;
+    stroke: #ffffff;
+}
+
+.logo h1 {
+    font-size: 23px;
+    line-height: 1.1;
+    font-weight: 700;
+}
+
+.logo p {
+    margin-top: 4px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+
+/* =====================================================
+   HERO
+===================================================== */
+
+.hero-content {
+    max-width: 540px;
+    margin-top: -20px;
+}
+
+.small-title {
+    display: inline-block;
+    margin-bottom: 13px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    color: #dcd3ff;
+}
+
+.hero-content h2 {
+    max-width: 530px;
+    margin-bottom: 18px;
+    font-size: clamp(38px, 4vw, 52px);
+    line-height: 1.06;
+    letter-spacing: -1.5px;
+    color: #ffffff;
+    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.25);
+}
+
+.hero-content > p {
+    max-width: 480px;
+    font-size: 15px;
+    line-height: 1.65;
+    color: rgba(255, 255, 255, 0.82);
+}
+
+
+/* =====================================================
+   FEATURES
+===================================================== */
+
+.features {
+    display: flex;
+    gap: 18px;
+    margin-top: 28px;
+}
+
+.feature {
+    min-width: 125px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    /* More opaque + a real border so cards read as solid UI,
+       not a translucent smear over a busy photo */
+    background: rgba(22, 20, 38, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+    transition: transform 0.25s ease, background 0.25s ease;
+}
+
+.feature:hover {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.feature-icon {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.feature-icon svg {
+    width: 17px;
+    height: 17px;
+    stroke: #ffffff;
+}
+
+.feature div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.feature strong {
+    font-size: 12px;
+    color: #ffffff;
+}
+
+.feature div span {
+    font-size: 9px;
+    white-space: nowrap;
+    color: rgba(255, 255, 255, 0.65);
+}
+
+
+/* =====================================================
+   COPYRIGHT
+===================================================== */
+
+.copyright {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+
+/* =====================================================
+   RIGHT SIDE
+===================================================== */
+
+.form-section {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 55px;
+    background: #faf9fd;
+}
+
+
+/* =====================================================
+   REGISTER CONTAINER
+===================================================== */
+
+.register-container {
+    width: 100%;
+    max-width: 485px;
+    animation: formAppear 0.7s ease-out;
+}
+
+@keyframes formAppear {
+    from {
+        opacity: 0;
+        transform: translateX(25px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+
+/* =====================================================
+   FORM HEADER
+===================================================== */
+
+.form-header {
+    margin-bottom: 22px;
+}
+
+.form-header h2 {
+    margin-bottom: 6px;
+    font-size: 31px;
+    line-height: 1.2;
+    font-weight: 700;
+    color: #171725;
+}
+
+.form-header p {
+    font-size: 13px;
+    color: #858591;
+}
+
+
+/* =====================================================
+   INPUT WRAPPER
+===================================================== */
+
+.input-wrapper {
+    margin-bottom: 13px;
+}
+
+.input-wrapper label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #353542;
+}
+
+
+/* =====================================================
+   INPUT
+===================================================== */
+
+.input-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+/* Leading icon: one consistent brand color/weight
+   for every field instead of mismatched emoji */
+.input-box > span {
+    position: absolute;
+    left: 15px;
+    z-index: 2;
+    display: flex;
+    color: #8f89a6;
+    transition: color 0.25s ease;
+    pointer-events: none;
+}
+
+.input-box > span svg {
+    width: 17px;
+    height: 17px;
+}
+
+.input-box:focus-within > span {
+    color: #6044ed;
+}
+
+.input-box input {
+    width: 100%;
+    height: 50px;
+    padding: 0 15px 0 43px;
+    border: 1px solid #dedee7;
+    border-radius: 11px;
+    outline: none;
+    background: #ffffff;
+    color: #252535;
+    font-size: 13px;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+/* Password fields get extra right padding to clear the toggle button */
+.input-box input[type="password"],
+.input-box input.password-visible {
+    padding-right: 44px;
+}
+
+.input-box input::placeholder {
+    color: #a0a0aa;
+}
+
+.input-box input:hover {
+    border-color: #c9c4dc;
+}
+
+.input-box input:focus {
+    border-color: #7255f5;
+    box-shadow: 0 0 0 4px rgba(114, 85, 245, 0.09);
+    transform: translateY(-1px);
+}
+
+
+/* =====================================================
+   PASSWORD VISIBILITY TOGGLE
+===================================================== */
+
+.toggle-password {
+    position: absolute;
+    right: 13px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: none;
+    background: transparent;
+    color: #8f89a6;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: color 0.2s ease, background 0.2s ease;
+}
+
+.toggle-password:hover {
+    color: #6044ed;
+    background: rgba(114, 85, 245, 0.08);
+}
+
+.toggle-password svg {
+    width: 17px;
+    height: 17px;
+}
+
+.toggle-password .icon-eye-off {
+    display: none;
+}
+
+.toggle-password.is-visible .icon-eye {
+    display: none;
+}
+
+.toggle-password.is-visible .icon-eye-off {
+    display: block;
+}
+
+
+/* =====================================================
+   ERROR
+===================================================== */
+
+.error-message {
+    min-height: 17px;
+    margin: 2px 0 5px;
+    text-align: left;
+    color: #e53935;
+    font-size: 12px;
+}
+
+
+/* =====================================================
+   REGISTER BUTTON
+===================================================== */
+
+.register-button {
+    width: 100%;
+    height: 52px;
+    margin-top: 4px;
+    border: none;
+    border-radius: 11px;
+    cursor: pointer;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    background: linear-gradient(135deg, #6044ed, #8064f5);
+    box-shadow: 0 9px 22px rgba(96, 68, 237, 0.25);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.register-button span {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 17px;
+    transition: transform 0.25s ease;
+}
+
+.register-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 13px 27px rgba(96, 68, 237, 0.35);
+}
+
+.register-button:hover span {
+    transform: translateX(5px);
+}
+
+.register-button:active {
+    transform: translateY(0);
+}
+
+
+/* =====================================================
+   LOGIN
+===================================================== */
+
+.login-section {
+    margin-top: 17px;
+    text-align: center;
+    font-size: 12px;
+    color: #858591;
+}
+
+.login-section a {
+    margin-left: 5px;
+    color: #6044ed;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.login-section a:hover {
+    text-decoration: underline;
+}
+
+
+/* =====================================================
+   TERMS
+===================================================== */
+
+.terms {
+    margin-top: 13px;
+    text-align: center;
+    font-size: 10px;
+    line-height: 1.5;
+    color: #aaaab3;
+}
+
+.terms span {
+    color: #6044ed;
+}
+
+
+/* =====================================================
+   MOBILE LOGO
+===================================================== */
+
+.mobile-logo {
+    display: none;
+}
+
+
+/* =====================================================
+   ACCESSIBILITY
+===================================================== */
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+    outline: 2px solid #6044ed;
+    outline-offset: 2px;
+}
+
+
+/* =====================================================
+   TABLET
+===================================================== */
+
+@media (max-width: 1050px) {
+    .register-page {
+        grid-template-columns: 52% 48%;
+    }
+
+    .book-content {
+        padding: 40px;
+    }
+
+    .hero-content h2 {
+        font-size: 40px;
+    }
+
+    .features {
+        gap: 10px;
+    }
+
+    .feature {
+        min-width: auto;
+        padding: 7px;
+    }
+
+    .feature div span {
+        display: none;
+    }
+
+    .form-section {
+        padding: 30px;
+    }
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 750px) {
+    .register-page {
+        display: block;
+    }
+
+    .book-section {
+        display: none;
+    }
+
+    .form-section {
+        min-height: 100vh;
+        padding: 30px 22px;
+    }
+
+    .register-container {
+        max-width: 430px;
+    }
+
+    .mobile-logo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 25px;
+    }
+
+    .mobile-logo .logo-icon {
+        width: 42px;
+        height: 42px;
+    }
+
+    .mobile-logo .logo-icon svg {
+        width: 21px;
+        height: 21px;
+    }
+
+    .mobile-logo span {
+        font-size: 21px;
+        font-weight: 700;
+        color: #242435;
+    }
+
+    .form-header {
+        text-align: center;
+    }
+
+    .form-header h2 {
+        font-size: 27px;
+    }
+}
+
+
+/* =====================================================
+   SMALL MOBILE
+===================================================== */
+
+@media (max-width: 400px) {
+    .form-section {
+        padding: 25px 18px;
+    }
+
+    .form-header h2 {
+        font-size: 24px;
+    }
+
+    .input-box input {
+        height: 48px;
+    }
+
+    .register-button {
+        height: 50px;
+    }
 }

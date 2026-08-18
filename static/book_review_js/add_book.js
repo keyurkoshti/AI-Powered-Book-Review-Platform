@@ -1,4 +1,4 @@
-// Load categories into the category input as a datalist
+
 async function loadCategories() {
     try {
         const response = await fetchWithAuth("/api/categories/", {
@@ -7,7 +7,7 @@ async function loadCategories() {
             }
         });
 
-        if (!response) return; // redirected to login
+        if (!response) return; 
 
         if (!response.ok) {
             return;
@@ -16,7 +16,6 @@ async function loadCategories() {
         const categories = await response.json();
         const categoryInput = document.getElementById("category");
 
-        // Create a datalist for category suggestions
         let datalist = document.getElementById("category-list");
         if (!datalist) {
             datalist = document.createElement("datalist");

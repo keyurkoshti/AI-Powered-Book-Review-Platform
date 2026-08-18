@@ -6,7 +6,7 @@ async function loadProfile() {
         }
     });
 
-    if (!response) return; // redirected to login
+    if (!response) return;
 
     if (!response.ok) {
         window.location.href = "/login/";

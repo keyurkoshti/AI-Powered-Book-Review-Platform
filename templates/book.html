@@ -28,7 +28,10 @@
         <label>Description</label>
         <textarea id="description" name="description" rows="4"></textarea>
 
-        <button type="submit">Save Book</button>
+        <div class="button-group">
+            <button type="submit">Save Book</button>
+            <a href="{% url 'home' %}" class="back-btn">← Back to Home</a>
+        </div>
     </form>
 </div>
 

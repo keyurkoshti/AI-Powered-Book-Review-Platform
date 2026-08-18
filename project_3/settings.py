@@ -49,6 +49,9 @@ INSTALLED_APPS = [
     'book_review',
 ]
 
+# use custom user model
+AUTH_USER_MODEL = 'book_review.UserProfile'
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

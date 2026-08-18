@@ -8,6 +8,7 @@ body {
     color: #333;
 }
 
+
 /* -------------------------------- Profile Card -------------------------------- */
 
 .profile-container {
@@ -19,13 +20,19 @@ body {
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
+
 /* -------------------------------- Heading -------------------------------- */
 
 .profile-container h2 {
     text-align: center;
     color: #2c3e50;
+    background-color: #bfd7f6;     /* heading background */
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 0;
     margin-bottom: 30px;
 }
+
 
 /* -------------------------------- User Details -------------------------------- */
 
@@ -38,6 +45,7 @@ body {
     color: #2c3e50;
 }
 
+
 /* -------------------------------- Divider -------------------------------- */
 
 hr {
@@ -46,12 +54,15 @@ hr {
     border-top: 1px solid #ddd;
 }
 
+
 /* -------------------------------- Back Button -------------------------------- */
 
 .back-btn {
-    display: inline-block;
+    display: block;               /* allows centering */
+    width: fit-content;
+    margin: 0 auto;               /* centers button */
     text-decoration: none;
-    background-color: #007bff;
+    background-color: #007bff;  
     color: white;
     padding: 10px 18px;
     border-radius: 5px;

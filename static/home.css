@@ -12,23 +12,31 @@ body {
     color: #2c3e50;
     display: flex;
     justify-content: space-between;
-    gap: 5px;
-    padding: 12px 24px;
+    align-items: center;      
+    padding: 5px 12px;
 }
 
 .left-section {
     display: flex;
     align-items: center;
-    gap: 10px; 
+    gap: 14px; 
 }
 
 .logo {
     height: 50px;
     width: auto;
+    display: block;
+}
+
+.left-section h1 {
+    margin: 0;
+    line-height: 1;
+    /* font-size: 40px; */
+    color: #2c3e50;
 }
 
 .right-section button {
-    margin-top: 27px;
+    /* margin-top: 22px; */
     padding: 8px 16px;
     background-color: #007bff;
     color: white;
@@ -72,10 +80,6 @@ a {
     color: #27ae60;
     text-decoration: none;
     font-weight: bold;
-}
-
-a:hover {
-    text-decoration: underline;
 }
 
 /* ------------------------------------------------Review Text------------------------------------------ */

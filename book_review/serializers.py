@@ -1,32 +1,23 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
-from .models import Book_Review_forms, Book, Category
+from .models import UserProfile, Book_Review_forms, Book, Category
 from better_profanity import profanity
 
 
 class RegisterSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length=100)
+    user_name = serializers.CharField(max_length=100)
     email = serializers.EmailField()
-    password1 = serializers.CharField(write_only=True)
-    password2 = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True)
 
-    def validate_username(self, value):
-        if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError("Username already exists")
+    def validate_email(self, value):
+        if UserProfile.objects.filter(email=value).exists():
+            raise serializers.ValidationError("user with this email already exists")
         return value
 
-    def validate(self, attrs):
-        if attrs['password1'] != attrs['password2']:
-            raise serializers.ValidationError({
-                "password": "Passwords do not match"
-            })
-        return attrs
-
     def create(self, validated_data):
-        return User.objects.create_user(
-            username=validated_data['username'],
+        return UserProfile.objects.create_user(
+            user_name=validated_data['user_name'],
             email=validated_data['email'],
-            password=validated_data['password1']
+            password=validated_data['password']
         )
 
 
@@ -50,7 +41,7 @@ class HomepageSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(serializers.Serializer):
-    username = serializers.CharField()
+    user_name = serializers.CharField()
     email = serializers.EmailField()
     date_joined = serializers.DateTimeField()
     reviews_count = serializers.IntegerField()
@@ -62,7 +53,7 @@ class BookListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Book
-        fields = ['id', 'title', 'author', 'category']
+        fields = ['id', 'title', 'author', 'category', 'description']
 
 
 # --------------------------Create Review Serializer---------------------------
@@ -88,14 +79,49 @@ class AddBookSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Book
-        fields = ['title', 'category', 'category_name', 'author', 'description']
-        read_only_fields = ['category']
+        fields = [
+            'title',
+            'category',
+            'category_name',
+            'author',
+            'description',
+            'added_by',
+        ]
+
+        read_only_fields = [
+            'category',
+            'added_by',
+        ]
 
     def validate_category_name(self, value):
-        category, created = Category.objects.get_or_create(name=value.strip())
-        return category
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError(
+                "Category name cannot be empty."
+            )
+
+        return value
 
     def create(self, validated_data):
         category = validated_data.pop('category_name')
+        user = validated_data.pop('added_by')
+
+        category, created = Category.objects.get_or_create(
+            name = category,
+            defaults={
+                'added_by': user
+            }
+        )
+
         validated_data['category'] = category
+        validated_data['added_by'] = user
+
         return super().create(validated_data)
+
+
+# --------------------------Category Serializer---------------------------
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'name']

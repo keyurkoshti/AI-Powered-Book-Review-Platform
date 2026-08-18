@@ -1,4 +1,3 @@
-// Load books into the dropdown on page load
 async function loadBooks() {
     try {
         const response = await fetchWithAuth("/api/books/", {
@@ -7,7 +6,7 @@ async function loadBooks() {
             }
         });
 
-        if (!response) return; // redirected to login
+        if (!response) return;
 
         if (!response.ok) {
             document.getElementById("book-select").innerHTML =
@@ -32,7 +31,6 @@ async function loadBooks() {
     }
 }
 
-// Handle form submission
 document.getElementById("review-form").addEventListener("submit", async function (e) {
     e.preventDefault();
 
@@ -49,7 +47,7 @@ document.getElementById("review-form").addEventListener("submit", async function
             body: formData
         });
 
-        if (!response) return; // redirected to login
+        if (!response) return;
 
         const data = await response.json();
 
@@ -57,7 +55,6 @@ document.getElementById("review-form").addEventListener("submit", async function
             alert("Review submitted successfully!");
             window.location.href = "/home/";
         } else {
-            // Show validation errors
             const errorMessages = [];
             if (typeof data === 'object') {
                 for (const key in data) {
@@ -75,5 +72,4 @@ document.getElementById("review-form").addEventListener("submit", async function
     }
 });
 
-// Load books when page loads
 loadBooks();
