@@ -1,111 +1,43 @@
-from django.contrib import messages 
-from django.shortcuts import render, redirect 
-from .models import Book_Review_forms, Book, Category
-from .forms import user_form
-from django.contrib.auth import authenticate, login, logout, get_user_model
+from django.shortcuts import render
+
+# ---------------- HTML Template Views ----------------
+# views.py is dedicated solely to rendering HTML template pages.
+# All data operations, authentication, and mutations are handled via API calls to api_views.py.
+
+def home_view(request):
+    """Render the Home page template."""
+    return render(request, 'home.html')
 
 
-User = get_user_model()
+def login_view(request):
+    """Render the Login page template."""
+    return render(request, 'login.html')
 
 
-# ---------------- Register User ----------------
-def register_user(request):
-    if request.method == "POST":
-        username = request.POST['username']
-        email = request.POST.get('email')
-        password1 = request.POST['password1']
-        password2 = request.POST['password2']
-
-        if password1 != password2:
-            messages.error(request, "Passwords do not match")
-            return render(request, 'register.html')
-
-        if User.objects.filter(username=username).exists():
-            messages.error(request, "Username already exists")
-            return render(request, "register.html")
-
-        user = User.objects.create_user(
-            username=username, 
-            email=email, 
-            password=password1)
-        user.save()
-        messages.success(request, "Account created successfully. Please login.")
-        return redirect('login')   
-
-    return render(request, "register.html")
-
-# ----------------------api call register page-----------------------------
-def register_page(request):
-    return render(request, "register.html")
-
-# ---------------- Login User ----------------
-def login_user(request):
-    if request.method == "POST":
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(username=username, password=password)
-        if user is not None:
-            login(request, user)
-            return redirect('home')
-        messages.error(request, "Invalid credentials")
-        return render(request, "login.html")
-
-    return render(request, "login.html")
+def register_view(request):
+    """Render the Register page template."""
+    return render(request, 'register.html')
 
 
-
-# ---------------- Logout User ----------------
-def logout_user(request):
-    logout(request)
-    messages.info(request, "You have been logged out.")
-    return redirect('login') 
-
-
-# ---------------- Book Review Form ----------------
-def form_view(request):
-    if request.method == 'POST':
-        form = user_form(request.POST, request.FILES)
-        if form.is_valid():
-            review = form.save(commit=False)
-            review.user = request.user  
-            review.save()
-            messages.success(request, 'Review saved successfully')
-            return redirect('home') 
-    else:
-        form = user_form()
-    return render(request, 'book_review_form.html', {'form': form})
-
-
-# ---------------- Home page ----------------
-def home(request):
-    reviews = Book_Review_forms.objects.select_related('user', 'book').all().order_by('-id')
-    return render(request, 'home.html', {'reviews': reviews})
-
-
-# --------------------Book Info------------------------
-def book_info(request):
-    categories = Category.objects.all()
-    if request.method == "POST":
-        title = request.POST['title']
-        category_id  = request.POST['category']
-        author = request.POST['author']
-        description = request.POST['description']
-
-        category = Category.objects.get(id=category_id)
-
-        Book.objects.create(
-            title=title,
-            category=category,
-            author=author,
-            description=description
-        )
-        messages.success(request, "Book added successfully")
-        return redirect('form_view')
-    
-    
-    return render(request, 'book.html', {'categories': categories})
-
-
-# ----------------------------------User Profile-----------------------------------
 def profile_view(request):
+    """Render the User Profile page template."""
     return render(request, 'profile.html')
+
+
+def book_info_view(request):
+    """Render the Add Book page template."""
+    return render(request, 'book.html')
+
+
+def review_form_view(request):
+    """Render the Add Review Form page template."""
+    return render(request, 'book_review_form.html')
+
+
+# Backward-compatible aliases for existing references
+home = home_view
+login_user = login_view
+register_user = register_view
+register_page = register_view
+book_info = book_info_view
+form_view = review_form_view

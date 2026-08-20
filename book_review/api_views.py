@@ -53,128 +53,131 @@ class RegisterApiview(generics.CreateAPIView):
     def perform_create(self, serializer):
         user = serializer.save()
 
-        email = EmailMultiAlternatives(
-            subject="Welcome to Book Review",
-            body=f"""
-                Hi {user.user_name},
+        try:
+            email = EmailMultiAlternatives(
+                subject="Welcome to Book Review",
+                body=f"""
+                    Hi {user.user_name},
 
-                Welcome to Book Review! Your account has been created successfully.
+                    Welcome to Book Review! Your account has been created successfully.
 
-                Here's what you can do next:
+                    Here's what you can do next:
 
-                1. LOGIN TO YOUR ACCOUNT
-                Go to the login page and enter your credentials:
-                Username: {user.user_name}
-                Password: (the password you created during registration)
+                    1. LOGIN TO YOUR ACCOUNT
+                    Go to the login page and enter your credentials:
+                    Username: {user.user_name}
+                    Password: (the password you created during registration)
 
-                2. EXPLORE BOOKS
-                Browse reviews from other readers to discover your next great read.
+                    2. EXPLORE BOOKS
+                    Browse reviews from other readers to discover your next great read.
 
-                3. WRITE A REVIEW
-                Share your thoughts on books you've read and help others make informed choices.
+                    3. WRITE A REVIEW
+                    Share your thoughts on books you've read and help others make informed choices.
 
-                4. BUILD YOUR PROFILE
-                Track your reading journey by managing your reviews and profile.
+                    4. BUILD YOUR PROFILE
+                    Track your reading journey by managing your reviews and profile.
 
-                Login link: http://localhost:8000/login/
+                    Login link: http://localhost:8000/login/
 
-                Need help? Reply to this email and we'll assist you.
+                    Need help? Reply to this email and we'll assist you.
 
-                Happy reading!
-                The Book Review Team
-                """,
-            from_email="Book Review <{}>".format(settings.EMAIL_HOST_USER),
-            to=[user.email],
-        )
+                    Happy reading!
+                    The Book Review Team
+                    """,
+                from_email="Book Review <{}>".format(settings.EMAIL_HOST_USER),
+                to=[user.email],
+            )
 
-        html = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            </head>
-            <body style="margin:0; padding:0; background-color:#f4f4f4; font-family:Arial, Helvetica, sans-serif;">
-                <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-                    <tr>
-                        <td style="padding:40px 20px;">
-                            <table role="presentation" cellpadding="0" cellspacing="0" width="600" align="center" style="background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.1);">
-                                <!-- Header -->
-                                <tr>
-                                    <td style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding:30px 40px; text-align:center;">
-                                        <h1 style="color:#ffffff; font-size:28px; margin:0;">Welcome to Book Review</h1>
-                                    </td>
-                                </tr>
-                                <!-- Body -->
-                                <tr>
-                                    <td style="padding:40px;">
-                                        <p style="font-size:16px; color:#333333; margin:0 0 10px 0;">Hi <strong>{user.user_name}</strong>,</p>
-                                        <p style="font-size:16px; color:#333333; margin:0 0 20px 0;">Welcome to <strong>Book Review</strong>! Your account has been created successfully.</p>
+            html = f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                </head>
+                <body style="margin:0; padding:0; background-color:#f4f4f4; font-family:Arial, Helvetica, sans-serif;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                        <tr>
+                            <td style="padding:40px 20px;">
+                                <table role="presentation" cellpadding="0" cellspacing="0" width="600" align="center" style="background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.1);">
+                                    <!-- Header -->
+                                    <tr>
+                                        <td style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding:30px 40px; text-align:center;">
+                                            <h1 style="color:#ffffff; font-size:28px; margin:0;">Welcome to Book Review</h1>
+                                        </td>
+                                    </tr>
+                                    <!-- Body -->
+                                    <tr>
+                                        <td style="padding:40px;">
+                                            <p style="font-size:16px; color:#333333; margin:0 0 10px 0;">Hi <strong>{user.user_name}</strong>,</p>
+                                            <p style="font-size:16px; color:#333333; margin:0 0 20px 0;">Welcome to <strong>Book Review</strong>! Your account has been created successfully.</p>
 
-                                        <h3 style="color:#667eea; font-size:18px; margin:30px 0 15px 0;">📚 What's Next?</h3>
+                                            <h3 style="color:#667eea; font-size:18px; margin:30px 0 15px 0;">📚 What's Next?</h3>
 
-                                        <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-                                            <tr>
-                                                <td style="padding:12px 0; border-bottom:1px solid #eeeeee;">
-                                                    <p style="font-size:15px; color:#333333; margin:0;"><strong>1. Login to Your Account</strong></p>
-                                                    <p style="font-size:14px; color:#666666; margin:5px 0 0 0;">Use your username and password to sign in.</p>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td style="padding:12px 0; border-bottom:1px solid #eeeeee;">
-                                                    <p style="font-size:15px; color:#333333; margin:0;"><strong>2. Explore Books</strong></p>
-                                                    <p style="font-size:14px; color:#666666; margin:5px 0 0 0;">Browse reviews from other readers and discover new books.</p>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td style="padding:12px 0; border-bottom:1px solid #eeeeee;">
-                                                    <p style="font-size:15px; color:#333333; margin:0;"><strong>3. Write a Review</strong></p>
-                                                    <p style="font-size:14px; color:#666666; margin:5px 0 0 0;">Share your thoughts and help others find great reads.</p>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td style="padding:12px 0;">
-                                                    <p style="font-size:15px; color:#333333; margin:0;"><strong>4. Build Your Profile</strong></p>
-                                                    <p style="font-size:14px; color:#666666; margin:5px 0 0 0;">Track your reading journey and manage your reviews.</p>
-                                                </td>
-                                            </tr>
-                                        </table>
+                                            <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                                                <tr>
+                                                    <td style="padding:12px 0; border-bottom:1px solid #eeeeee;">
+                                                        <p style="font-size:15px; color:#333333; margin:0;"><strong>1. Login to Your Account</strong></p>
+                                                        <p style="font-size:14px; color:#666666; margin:5px 0 0 0;">Use your username and password to sign in.</p>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="padding:12px 0; border-bottom:1px solid #eeeeee;">
+                                                        <p style="font-size:15px; color:#333333; margin:0;"><strong>2. Explore Books</strong></p>
+                                                        <p style="font-size:14px; color:#666666; margin:5px 0 0 0;">Browse reviews from other readers and discover new books.</p>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="padding:12px 0; border-bottom:1px solid #eeeeee;">
+                                                        <p style="font-size:15px; color:#333333; margin:0;"><strong>3. Write a Review</strong></p>
+                                                        <p style="font-size:14px; color:#666666; margin:5px 0 0 0;">Share your thoughts and help others find great reads.</p>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="padding:12px 0;">
+                                                        <p style="font-size:15px; color:#333333; margin:0;"><strong>4. Build Your Profile</strong></p>
+                                                        <p style="font-size:14px; color:#666666; margin:5px 0 0 0;">Track your reading journey and manage your reviews.</p>
+                                                    </td>
+                                                </tr>
+                                            </table>
 
-                                        <!-- CTA Button -->
-                                        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:30px 0;">
-                                            <tr>
-                                                <td align="center">
-                                                    <a href="http://localhost:8000/login/" style="display:inline-block; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:#ffffff; text-decoration:none; font-size:16px; font-weight:bold; padding:14px 40px; border-radius:6px;">Login to Your Account</a>
-                                                </td>
-                                            </tr>
-                                        </table>
+                                            <!-- CTA Button -->
+                                            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:30px 0;">
+                                                <tr>
+                                                    <td align="center">
+                                                        <a href="http://localhost:8000/login/" style="display:inline-block; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:#ffffff; text-decoration:none; font-size:16px; font-weight:bold; padding:14px 40px; border-radius:6px;">Login to Your Account</a>
+                                                    </td>
+                                                </tr>
+                                            </table>
 
-                                        <hr style="border:none; border-top:1px solid #eeeeee; margin:20px 0;">
+                                            <hr style="border:none; border-top:1px solid #eeeeee; margin:20px 0;">
 
-                                        <p style="font-size:14px; color:#999999; margin:0 0 5px 0;">Need help? Reply to this email and we'll assist you.</p>
-                                        <p style="font-size:14px; color:#999999; margin:0;">Happy reading!</p>
-                                        <p style="font-size:14px; color:#999999; margin:10px 0 0 0;"><strong>The Book Review Team</strong></p>
-                                    </td>
-                                </tr>
-                                <!-- Footer -->
-                                <tr>
-                                    <td style="background-color:#f8f8f8; padding:20px 40px; text-align:center;">
-                                        <p style="font-size:12px; color:#bbbbbb; margin:0;">You received this email because you registered on Book Review.</p>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                </table>
-            </body>
-            </html>
-        """
-        email.extra_headers = {
-            'Reply-To': settings.EMAIL_HOST_USER,
-            'X-Mailer': 'Django',
-        }
-        email.attach_alternative(html, "text/html")
-        email.send()
+                                            <p style="font-size:14px; color:#999999; margin:0 0 5px 0;">Need help? Reply to this email and we'll assist you.</p>
+                                            <p style="font-size:14px; color:#999999; margin:0;">Happy reading!</p>
+                                            <p style="font-size:14px; color:#999999; margin:10px 0 0 0;"><strong>The Book Review Team</strong></p>
+                                        </td>
+                                    </tr>
+                                    <!-- Footer -->
+                                    <tr>
+                                        <td style="background-color:#f8f8f8; padding:20px 40px; text-align:center;">
+                                            <p style="font-size:12px; color:#bbbbbb; margin:0;">You received this email because you registered on Book Review.</p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </body>
+                </html>
+            """
+            email.extra_headers = {
+                'Reply-To': settings.EMAIL_HOST_USER,
+                'X-Mailer': 'Django',
+            }
+            email.attach_alternative(html, "text/html")
+            email.send()
+        except Exception:
+            pass
 
     def create(self, request, *args, **kwargs):
         super().create(request, *args, **kwargs)
@@ -189,20 +192,28 @@ class LoginApiview(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        email = request.data.get("email")
+        email = request.data.get("email") or request.data.get("username")
         password = request.data.get("password")
 
         if not email or not password:
             return Response(
-                {"error": "Username and Password are required."},
+                {"error": "Email/Username and Password are required."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        user = authenticate(request=request,email=email, password=password)
+        user = authenticate(request=request, email=email, password=password)
+
+        if user is None:
+            try:
+                user_obj = UserProfile.objects.filter(user_name=email).first()
+                if user_obj:
+                    user = authenticate(request=request, email=user_obj.email, password=password)
+            except Exception:
+                pass
 
         if user is None:
             return Response(
-                {"error": "Invalid username or password."},
+                {"error": "Invalid username/email or password."},
                 status=status.HTTP_401_UNAUTHORIZED
             )
 

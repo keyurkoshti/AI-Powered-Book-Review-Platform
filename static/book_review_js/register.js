@@ -47,40 +47,54 @@ function showToast(message, type = 'success') {
 document.getElementById('registerform').addEventListener("submit", async function(event) {
     event.preventDefault(); 
 
-    const response = await fetch('/api/register',{
-        method : "POST",
-        headers : {
-            "content-type" : "application/json",
-            "X-CSRFToken" : getCSRFToken()
-        },
-        body: JSON.stringify({
-            username : document.getElementById('username').value,
-            email: document.getElementById('email').value,
-            password: document.getElementById('password').value,
-            // password2: document.getElementById('password2').value,
-        })
-    });
+    const usernameVal = document.getElementById('username').value.trim();
+    const emailVal = document.getElementById('email').value.trim();
+    const passwordVal = document.getElementById('password').value;
 
-    const data = await response.json()
+    try {
+        const response = await fetch('/api/register/', {
+            method : "POST",
+            headers : {
+                "Content-Type" : "application/json",
+                "X-CSRFToken" : getCSRFToken()
+            },
+            body: JSON.stringify({
+                user_name : usernameVal,
+                username : usernameVal,
+                email: emailVal,
+                password: passwordVal,
+            })
+        });
 
-    if (response.ok){
-        showToast('✅ Registration successful!', 'success');
-        setTimeout(() => {
-            window.location.href = "/login/";
-        }, 1000);
-    }
-    else {
-        const parts = [];
-        if (data.error) parts.push(data.error);
-        if (data.username) parts.push(data.username);
-        if (data.email) parts.push(data.email);
-        if (data.password) parts.push(data.password);
-        // if (data.password) parts.push(data.password);
-        // if (data.password2) parts.push(data.password2);
+        const data = await response.json();
 
-        const errorMsg = parts.length ? parts.join(" ") : "something went wrong";
-        showToast('❌ ' + errorMsg, 'error');
-        document.getElementById('error').innerText = errorMsg;
+        if (response.ok){
+            showToast('✅ Registration successful! Redirecting to login...', 'success');
+            setTimeout(() => {
+                window.location.href = "/login/";
+            }, 1200);
+        }
+        else {
+            const parts = [];
+            if (typeof data === 'string') {
+                parts.push(data);
+            } else if (typeof data === 'object') {
+                for (const key in data) {
+                    if (Array.isArray(data[key])) {
+                        parts.push(`${data[key].join(", ")}`);
+                    } else if (typeof data[key] === 'string') {
+                        parts.push(data[key]);
+                    }
+                }
+            }
+
+            const errorMsg = parts.length ? parts.join(" ") : "Something went wrong during registration.";
+            showToast('❌ ' + errorMsg, 'error');
+            document.getElementById('error').innerText = errorMsg;
+        }
+    } catch (err) {
+        showToast('❌ Unable to connect to server.', 'error');
+        document.getElementById('error').innerText = "Unable to connect to the server.";
     }
 });
 

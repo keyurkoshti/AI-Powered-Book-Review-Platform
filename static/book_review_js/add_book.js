@@ -40,18 +40,19 @@ async function loadCategories() {
 document.getElementById("add-book-form").addEventListener("submit", async function (e) {
     e.preventDefault();
 
-const formData = {
-        title: document.getElementById("title").value,
-        category_name: document.getElementById("category").value,
-        author: document.getElementById("author").value,
-        description: document.getElementById("description").value
+    const formData = {
+        title: document.getElementById("title").value.trim(),
+        category_name: document.getElementById("category").value.trim(),
+        author: document.getElementById("author").value.trim(),
+        description: document.getElementById("description").value.trim()
     };
 
     try {
         const response = await fetchWithAuth("/api/add-book/", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "X-CSRFToken": typeof getCSRFToken === 'function' ? getCSRFToken() : ''
             },
             body: JSON.stringify(formData)
         });
@@ -68,6 +69,8 @@ const formData = {
                 for (const key in data) {
                     if (Array.isArray(data[key])) {
                         errorMessages.push(`${key}: ${data[key].join(", ")}`);
+                    } else if (typeof data[key] === 'string') {
+                        errorMessages.push(`${key}: ${data[key]}`);
                     }
                 }
             }
@@ -81,3 +84,4 @@ const formData = {
 
 // Load categories when page loads
 loadCategories();
+

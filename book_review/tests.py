@@ -116,3 +116,15 @@ def test_add_book(authenticated_client):
     assert response.data["message"] == "Book added successfully."
     assert Book.objects.filter(title="New Book").exists()
     assert Category.objects.filter(name="New Category").exists()
+
+@pytest.mark.django_db
+def test_template_views(api_client):
+    """Test that all HTML template views render successfully (HTTP 200)."""
+    assert api_client.get("/").status_code == 200
+    assert api_client.get("/home/").status_code == 200
+    assert api_client.get("/login/").status_code == 200
+    assert api_client.get("/register/").status_code == 200
+    assert api_client.get("/profile/").status_code == 200
+    assert api_client.get("/book_info/").status_code == 200
+    assert api_client.get("/form/").status_code == 200
+

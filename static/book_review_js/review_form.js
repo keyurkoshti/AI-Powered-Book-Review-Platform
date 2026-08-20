@@ -34,16 +34,27 @@ async function loadBooks() {
 document.getElementById("review-form").addEventListener("submit", async function (e) {
     e.preventDefault();
 
+    const bookSelect = document.getElementById("book-select");
+    const bookPhotoInput = document.getElementById("book_photo");
+    const bookUrlInput = document.getElementById("book_url");
+    const ratingInput = document.getElementById("rating");
+    const bookReviewInput = document.getElementById("book_review");
+
     const formData = new FormData();
-    formData.append("book", document.getElementById("book-select").value);
-    formData.append("book_photo", document.getElementById("book_photo").files[0]);
-    formData.append("book_url", document.getElementById("book_url").value);
-    formData.append("rating", document.getElementById("rating").value);
-    formData.append("book_review", document.getElementById("book_review").value);
+    formData.append("book", bookSelect.value);
+    if (bookPhotoInput.files && bookPhotoInput.files[0]) {
+        formData.append("book_photo", bookPhotoInput.files[0]);
+    }
+    formData.append("book_url", bookUrlInput.value.trim());
+    formData.append("rating", ratingInput.value);
+    formData.append("book_review", bookReviewInput.value.trim());
 
     try {
         const response = await fetchWithAuth("/api/reviews/", {
             method: "POST",
+            headers: {
+                "X-CSRFToken": typeof getCSRFToken === 'function' ? getCSRFToken() : ''
+            },
             body: formData
         });
 
@@ -60,6 +71,8 @@ document.getElementById("review-form").addEventListener("submit", async function
                 for (const key in data) {
                     if (Array.isArray(data[key])) {
                         errorMessages.push(`${key}: ${data[key].join(", ")}`);
+                    } else if (typeof data[key] === 'string') {
+                        errorMessages.push(`${key}: ${data[key]}`);
                     }
                 }
             }
@@ -73,3 +86,4 @@ document.getElementById("review-form").addEventListener("submit", async function
 });
 
 loadBooks();
+
