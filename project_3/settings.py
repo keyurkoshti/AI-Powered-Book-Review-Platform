@@ -153,7 +153,7 @@ REST_FRAMEWORK = {
 
 # --------------------------jwt refresh token------------------------------
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME" : timedelta(minutes=1),
+    "ACCESS_TOKEN_LIFETIME" : timedelta(minutes=15),
     "REFRESH_TOKEN_LIFETIME" : timedelta(days=7),
     "AUTH_HEADER_TYPES" : ('Bearer',),
     "ROTATE_REFRESH_TOKENS": True,
@@ -173,3 +173,9 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# secret_key
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")

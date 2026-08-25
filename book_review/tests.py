@@ -15,6 +15,8 @@ def authenticated_client(api_client, db):
         email="test@example.com",
         password="TestPassword123"
     )
+    api_client.force_login(user)
+    # Also set JWT cookies if needed for API tests
     api_client.post(
         "/api/login/",
         {"email": "test@example.com", "password": "TestPassword123"},
@@ -118,13 +120,23 @@ def test_add_book(authenticated_client):
     assert Category.objects.filter(name="New Category").exists()
 
 @pytest.mark.django_db
-def test_template_views(api_client):
+def test_template_views(authenticated_client):
     """Test that all HTML template views render successfully (HTTP 200)."""
-    assert api_client.get("/").status_code == 200
-    assert api_client.get("/home/").status_code == 200
-    assert api_client.get("/login/").status_code == 200
-    assert api_client.get("/register/").status_code == 200
-    assert api_client.get("/profile/").status_code == 200
-    assert api_client.get("/book_info/").status_code == 200
-    assert api_client.get("/form/").status_code == 200
+    client, user = authenticated_client
+    
+    # Protected views (should be 200 when authenticated)
+    assert client.get("/").status_code == 200
+    assert client.get("/home/").status_code == 200
+    assert client.get("/profile/").status_code == 200
+    assert client.get("/book_info/").status_code == 200
+    assert client.get("/form/").status_code == 200
+
+    # Public views (use a fresh anonymous client)
+    anon_client = APIClient()
+    assert anon_client.get("/login/").status_code == 200
+    assert anon_client.get("/register/").status_code == 200
+    
+    # Protected views (should be 302 when NOT authenticated)
+    assert anon_client.get("/").status_code == 302
+    assert anon_client.get("/home/").status_code == 302
 

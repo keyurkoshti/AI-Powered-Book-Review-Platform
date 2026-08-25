@@ -31,18 +31,68 @@
                 <button>Profile</button>
             </a>
 
-            <button id="logout-btn">Logout</button>
+            <form action="{% url 'logout_api' %}" method="post" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit">Logout</button>
+            </form>
         </div>
 
     </div>
 
-    <!-- Reviews will be loaded here -->
-    <div id="reviews-container">
+    {% if messages %}
+        <div style="text-align: center; margin: 10px;">
+            {% for message in messages %}
+                <p style="color: green;">{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
 
+    <!-- Reviews container -->
+    <div id="reviews-container">
+        {% for review in reviews %}
+            <div class="review-card">
+                <h3>{{ review.book.title }}
+                    <span style="font-size: 14px; color: #666; font-weight: normal;"> by {{ review.book.author }}</span>
+                </h3>
+
+                {% if review.book_photo %}
+                    <img src="{{ review.book_photo.url }}" alt="{{ review.book.title }}" style="max-height: 220px; width: auto; object-fit: cover; border-radius: 6px; margin: 10px 0;">
+                {% endif %}
+
+                {% if review.rating %}
+                    <p><strong>Rating:</strong> 
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= review.rating %}⭐{% endif %}
+                        {% endfor %}
+                        ({{ review.rating }}/5)
+                    </p>
+                {% endif %}
+
+                {% if review.book_url %}
+                    <p><strong>Book URL:</strong>
+                        <a href="{{ review.book_url }}" target="_blank" rel="noopener noreferrer">
+                            {{ review.book_url }}
+                        </a>
+                    </p>
+                {% endif %}
+
+                <p><strong>Review:</strong> {{ review.book_review }}</p>
+
+                <p><strong>Reviewed By:</strong> <em>{{ review.user.user_name }}</em></p>
+            </div>
+        {% empty %}
+            <div style="text-align: center; padding: 40px 20px; color: #666;">
+                <h3>No reviews yet</h3>
+                <p>Be the first reader to share a book review!</p>
+                <a href="{% url 'form_view' %}" style="display: inline-block; margin-top: 10px; background-color: #007bff; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">+ Add Review</a>
+            </div>
+        {% endfor %}
     </div>
 
+    {% comment %} 
     <script src="{% static 'book_review_js/auth.js' %}"></script>
     <script src="{% static 'book_review_js/homepage.js' %}"></script>
     <script src="{% static 'book_review_js/logout.js' %}"></script>
+    {% endcomment %}
 </body>
 </html>

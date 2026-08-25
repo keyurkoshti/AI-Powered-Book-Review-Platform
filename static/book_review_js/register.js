@@ -47,7 +47,7 @@ function showToast(message, type = 'success') {
 document.getElementById('registerform').addEventListener("submit", async function(event) {
     event.preventDefault(); 
 
-    const usernameVal = document.getElementById('username').value.trim();
+    const usernameVal = document.getElementById('user_name').value.trim();
     const emailVal = document.getElementById('email').value.trim();
     const passwordVal = document.getElementById('password').value;
 

@@ -76,7 +76,8 @@ class Book(models.Model):
     author = models.CharField(max_length=100)
     description = models.TextField()
     added_by = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name="book_added")
-
+    is_available = models.BooleanField(default=False)
+    
     def __str__(self):
         return f"{self.title}"
     
@@ -112,3 +113,52 @@ class RefreshTokenStore(models.Model):
     def is_valid(self):
         return timezone.now() < self.expires_at
     
+
+class BookSubScription(models.Model):
+    STATUS_PENDING   = 'pending'
+    STATUS_ACTIVE    = 'active'
+    STATUS_FAILED    = 'failed'
+    STATUS_EXPIRED   = 'expired'
+    STATUS_CANCELLED = 'cancelled'
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_ACTIVE, 'Active'),
+        (STATUS_FAILED, 'Failed'),
+        (STATUS_EXPIRED, 'Expired'),
+        (STATUS_CANCELLED, 'Cancelled'),
+    ]
+
+    subscription_choices = [
+        (1, "1 month"), (3, "3 month"), (6, "6 month"), (12, "12 month"),
+    ]
+
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="subscriptions")
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="subscribed")
+    subscription_duration = models.PositiveIntegerField(choices=subscription_choices)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=10, default='inr')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    stripe_checkout_session_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    stripe_payment_intent_id = models.CharField(max_length=255, null=True, blank=True)
+    start_date = models.DateTimeField(null=True, blank=True)
+    end_date = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['book'],
+                condition=models.Q(status__in = ['pending','active']),
+                name = 'unique_active_or_pending_subscrption_per_book',
+            )
+        ]
+
+    def is_active(self):
+        return self.status == self.STATUS_ACTIVE and self.end_date and self.end_date > timezone.now()
+
+class StripeWebHookEvent(models.Model):
+    event_id = models.CharField(max_length=255, unique=True)
+    event_type = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)

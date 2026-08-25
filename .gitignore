@@ -6,5 +6,6 @@ book_photos
 data.json
 images
 .env
+venv
 TODO.md
 registerpage_image

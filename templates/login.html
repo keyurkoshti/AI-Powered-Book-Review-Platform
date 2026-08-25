@@ -10,22 +10,17 @@
 <div class="login-container">
     <h2>Login</h2>
 
-    <form id="loginform">
+    <form id="loginform" method="post">
         {% csrf_token %}
+        
+        {% if messages %}
+            {% for message in messages %}
+                <p class="error">{{ message }}</p>
+            {% endfor %}
+        {% endif %}
 
-        <input
-            type="text"
-            id="username"
-            placeholder="Username or Email"
-            required
-        >
-
-        <input
-            type="password"
-            id="password"
-            placeholder="Password"
-            required
-        >
+        {{ form.username_or_email }}
+        {{ form.password }}
 
         <button type="submit">Login</button>
     </form>
@@ -39,7 +34,7 @@
 
 </div>
 
-<script src="{% static 'book_review_js/login.js' %}"></script>
+{% comment %} <script src="{% static 'book_review_js/login.js' %}"></script> {% endcomment %}
 
 </body>
 </html>

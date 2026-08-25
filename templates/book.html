@@ -11,22 +11,36 @@
 <div class="container">
     <h2>Add Book Information</h2>
 
-    <p id="error" style="color: red;"></p>
+    {% if messages %}
+        {% for message in messages %}
+            <p style="color: green;">{{ message }}</p>
+        {% endfor %}
+    {% endif %}
 
-    <form id="add-book-form">
+    <p id="error" style="color: red;">
+        {% if form.errors %}
+            {% for field in form %}
+                {% for error in field.errors %}
+                    {{ field.label }}: {{ error }}<br>
+                {% endfor %}
+            {% endfor %}
+        {% endif %}
+    </p>
+
+    <form id="add-book-form" method="post">
         {% csrf_token %}
 
-        <label>Title</label>
-        <input type="text" id="title" name="title" required>
+        <label for="{{ form.title.id_for_label }}">Title</label>
+        {{ form.title }}
 
-        <label>Category</label>
-        <input type="text" id="category" name="category" placeholder="e.g. Fiction, Non-Fiction" required>
+        <label for="{{ form.category_name.id_for_label }}">Category</label>
+        {{ form.category_name }}
 
-        <label>Author</label>
-        <input type="text" id="author" name="author" required>
+        <label for="{{ form.author.id_for_label }}">Author</label>
+        {{ form.author }}
 
-        <label>Description</label>
-        <textarea id="description" name="description" rows="4"></textarea>
+        <label for="{{ form.description.id_for_label }}">Description</label>
+        {{ form.description }}
 
         <div class="button-group">
             <button type="submit">Save Book</button>
@@ -35,8 +49,10 @@
     </form>
 </div>
 
+{% comment %} 
 <script src="{% static 'book_review_js/auth.js' %}"></script>
 <script src="{% static 'book_review_js/add_book.js' %}"></script>
+{% endcomment %}
 
 </body>
 </html>

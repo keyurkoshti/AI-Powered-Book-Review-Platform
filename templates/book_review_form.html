@@ -9,32 +9,40 @@
 
 </head>
 <body>
- <h1>Book Review Form</h1>
- <form id="review-form" enctype="multipart/form-data">
+<h1>Book Review Form</h1>
+ <form id="review-form" method="post" enctype="multipart/form-data">
     {% csrf_token %}
-    <label>Book:</label>
-    <select id="book-select" required>
-        <option value="">Loading books...</option>
-    </select>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <p style="color: green;">{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+
+    <p id="error" style="color: red;">
+        {% if form.errors %}
+            {% for field in form %}
+                {% for error in field.errors %}
+                    {{ field.label }}: {{ error }}<br>
+                {% endfor %}
+            {% endfor %}
+        {% endif %}
+    </p>
+
+    <label for="{{ form.book.id_for_label }}">Book:</label>
+    {{ form.book }}
     <br>
-    <label>Book Photo:</label>
-    <input type="file" id="book_photo" name="book_photo" accept="image/*" required>
+    <label for="{{ form.book_photo.id_for_label }}">Book Photo:</label>
+    {{ form.book_photo }}
     <br>
-    <label>Book URL:</label>
-    <input type="url" id="book_url" name="book_url" placeholder="https://example.com" required>
+    <label for="{{ form.book_url.id_for_label }}">Book URL:</label>
+    {{ form.book_url }}
     <br>
-    <label>Rating:</label>
-    <select id="rating" required>
-        <option value="">Select Rating...</option>
-        <option value="1">⭐</option>
-        <option value="2">⭐⭐</option>
-        <option value="3">⭐⭐⭐</option>
-        <option value="4">⭐⭐⭐⭐</option>
-        <option value="5">⭐⭐⭐⭐⭐</option>
-    </select>
+    <label for="{{ form.rating.id_for_label }}">Rating:</label>
+    {{ form.rating }}
     <br>
-    <label>Review:</label>
-    <textarea id="book_review" name="book_review" rows="4" cols="50" placeholder="Write your opinion here" required></textarea>
+    <label for="{{ form.book_review.id_for_label }}">Review:</label>
+    {{ form.book_review }}
     <br>    
   <div class="button-group">
     <a href="{% url 'home' %}" class="back-btn">← Back to Home</a>
@@ -42,10 +50,10 @@
   </div>
   </form>
 
-  <p id="error" style="color: red;"></p>
-
+  {% comment %} 
   <script src="{% static 'book_review_js/auth.js' %}"></script>
   <script src="{% static 'book_review_js/review_form.js' %}"></script>
+  {% endcomment %}
 
 </body>
 </html>

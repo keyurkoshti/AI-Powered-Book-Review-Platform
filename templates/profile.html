@@ -12,13 +12,13 @@
             
             <h2>User Profile</h2>
 
-                <p><strong>Username:</strong> <span id="username"></span></p>
+                <p><strong>Username:</strong> <span id="username">{{ user.user_name }}</span></p>
 
-                <p><strong>Email:</strong> <span id="email"></span></p>
+                <p><strong>Email:</strong> <span id="email">{{ user.email }}</span></p>
 
-                <p><strong>Date Joined:</strong> <span id="date_joined"></span></p>
+                <p><strong>Date Joined:</strong> <span id="date_joined">{{ user.date_joined|date:"m/d/Y" }}</span></p>
 
-                <p><strong>Total Reviews:</strong> <span id="reviews_count"></span></p>
+                <p><strong>Total Reviews:</strong> <span id="reviews_count">{{ user.reviews_count }}</span></p>
 
                 <hr>
 
@@ -26,8 +26,10 @@
 
         </div>
 
+        {% comment %} 
         <script src="{% static 'book_review_js/auth.js' %}"></script>
         <script src="{% static 'book_review_js/profile.js' %}"></script>
+        {% endcomment %}
 
     </body>
 </html>

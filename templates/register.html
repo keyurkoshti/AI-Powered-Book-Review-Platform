@@ -167,13 +167,13 @@
                 </div>
 
                 <!-- Register form -->
-                <form id="registerform">
+                <form id="registerform" method="post">
 
                     {% csrf_token %}
 
                     <!-- Username -->
                     <div class="input-wrapper">
-                        <label for="username">Username</label>
+                        <label for="{{ form.user_name.id_for_label }}">Username</label>
                         <div class="input-box">
                             <span>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -181,13 +181,13 @@
                                     <path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7"/>
                                 </svg>
                             </span>
-                            <input type="text" id="username" placeholder="Enter your username" required>
+                            {{ form.user_name }}
                         </div>
                     </div>
 
                     <!-- Email -->
                     <div class="input-wrapper">
-                        <label for="email">Email</label>
+                        <label for="{{ form.email.id_for_label }}">Email</label>
                         <div class="input-box">
                             <span>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -195,13 +195,13 @@
                                     <path d="m4 7 8 6 8-6"/>
                                 </svg>
                             </span>
-                            <input type="email" id="email" placeholder="Enter your email" required>
+                            {{ form.email }}
                         </div>
                     </div>
 
                     <!-- Password -->
                     <div class="input-wrapper">
-                        <label for="password1">Password</label>
+                        <label for="{{ form.password.id_for_label }}">Password</label>
                         <div class="input-box">
                             <span>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -209,24 +209,13 @@
                                     <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>
                                 </svg>
                             </span>
-                            <input type="password" id="password" placeholder="Create a password" required>
-                            <button type="button" class="toggle-password" data-target="password" aria-label="Show password">
-                                <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/>
-                                    <circle cx="12" cy="12" r="3"/>
-                                </svg>
-                                <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M3 3l18 18"/>
-                                    <path d="M10.6 5.2C11 5.1 11.5 5 12 5c6.4 0 10 7 10 7a15.8 15.8 0 0 1-3.4 4.3M6.6 6.6C4 8.3 2 12 2 12s3.6 7 10 7c1.4 0 2.7-.3 3.8-.8"/>
-                                    <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>
-                                </svg>
-                            </button>
+                            {{ form.password }}
                         </div>
                     </div>
 
                     <!-- Confirm password -->
-                    {% comment %} <div class="input-wrapper">
-                        <label for="password2">Confirm Password</label>
+                    <div class="input-wrapper">
+                        <label for="{{ form.confirm_password.id_for_label }}">Confirm Password</label>
                         <div class="input-box">
                             <span>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -234,23 +223,23 @@
                                     <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>
                                 </svg>
                             </span>
-                            <input type="password" id="password2" placeholder="Confirm your password" required>
-                            <button type="button" class="toggle-password" data-target="password2" aria-label="Show password">
-                                <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/>
-                                    <circle cx="12" cy="12" r="3"/>
-                                </svg>
-                                <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M3 3l18 18"/>
-                                    <path d="M10.6 5.2C11 5.1 11.5 5 12 5c6.4 0 10 7 10 7a15.8 15.8 0 0 1-3.4 4.3M6.6 6.6C4 8.3 2 12 2 12s3.6 7 10 7c1.4 0 2.7-.3 3.8-.8"/>
-                                    <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>
-                                </svg>
-                            </button>
+                            {{ form.confirm_password }}
                         </div>
-                    </div> {% endcomment %}
+                    </div>
 
                     <!-- Error -->
-                    <p id="error" class="error-message"></p>
+                    <p id="error" class="error-message">
+                        {% if form.errors %}
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        {% endif %}
+                    </p>
 
                     <!-- Register -->
                     <button type="submit" class="register-button">
@@ -259,6 +248,7 @@
                     </button>
 
                 </form>
+
 
                 <!-- Login -->
                 <div class="login-section">

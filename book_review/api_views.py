@@ -2,19 +2,23 @@ from rest_framework.views import APIView
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import (
-    RegisterSerializer, HomepageSerializer, ProfileSerializer, 
-    CreateReviewSerializer, AddBookSerializer, BookListSerializer,
-    CategorySerializer
-)
+from .serializers import RegisterSerializer, HomepageSerializer, ProfileSerializer, CreateReviewSerializer, AddBookSerializer, BookListSerializer, CategorySerializer
 from django.contrib.auth import authenticate, logout, get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from django.core.cache import cache
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import UserProfile, Book_Review_forms, Book, Category, RefreshTokenStore
+from .models import UserProfile, Book_Review_forms, Book, Category, RefreshTokenStore, BookSubScription, StripeWebHookEvent
 from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
 from django.utils import timezone
+from django.db import transaction, IntegrityError
+from dotenv import load_dotenv
+from dateutil import relativedelta
+import stripe
+
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
+SUBSCRIPTION_PRICES = {1: 1, 3: 1, 6: 1, 12: 1} 
 
 User = get_user_model()
 
@@ -406,3 +410,112 @@ class AddBookAPIView(generics.CreateAPIView):
             },
             status=status.HTTP_201_CREATED
         )
+
+# -----------------------Stripe Integration----------------------------
+class CreateCheckoutSessionAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, book_id):
+        duration = request.data.get("subscription_duration")
+
+        if duration not in SUBSCRIPTION_PRICES:
+            return Response({"error":"enter valid subscription duration"}, status=400)
+        
+
+        try:
+            with transaction.atomic():
+                book = Book.objects.select_for_update().get(id=book_id)
+                already_taken = BookSubScription.objects.filter(book=book, status__in=['pending', 'active']).exists()
+                if already_taken:
+                    return Response({"error":"This book already has a payment in progress or an active subscription."})
+                price = SUBSCRIPTION_PRICES[duration]
+                subscription = BookSubScription.objects.create(
+                    user = request.user,
+                    book = book,
+                    subscription_duration = duration,
+                    price = price,
+                    status = BookSubScription.STATUS_PENDING
+                )
+
+        except book.DoesNotExist:
+            return Response({"error":"book not found"}, status=404)
+        except IntegrityError:
+            return Response({"error":"This book was just taken by another user."}, status=409)
+        
+        try:
+            session = stripe.checkout.Session.create(
+                mode="payment",
+                payment_method_types=["card"],
+                line_items=[{
+                    "price_data": {
+                        "currency": "inr",
+                        "unit_amount": int(price * 100),
+                        "product_data": {"name": f"Subscription: {book.title}"},
+                    },
+                    "quantity": 1,
+                }],
+                metadata={
+                    "subscription_id": str(subscription.id),
+                    "book_id": str(book.id),
+                    "user_id": str(request.user.id),
+                },
+                success_url="http://localhost:8000/payment/success?session_id={CHECKOUT_SESSION_ID}",
+                cancel_url="http://localhost:8000/payment/cancel",
+            )
+        except Exception as e:
+            subscription.status = BookSubScription.STATUS_FAILED
+            subscription.save(update_fields=["status"])
+            return Response({"error": "Could not start payment.", "detail": str(e)}, status=502)
+
+        subscription.stripe_checkout_session_id = session.id
+        subscription.save(update_fields=["stripe_checkout_session_id"])
+
+        return Response({"checkout_url": session.url}, status=200)
+    
+class StripeWebhookAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        payload = request.body
+        sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
+
+        try:
+            event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
+        except (ValueError, stripe.error.SignatureVerificationError):
+            return Response(status=400)
+
+        # idempotency
+        if StripeWebHookEvent.objects.filter(event_id=event["id"]).exists():
+            return Response(status=200)
+
+        if event["type"] == "checkout.session.completed":
+            session = event["data"]["object"]
+            sub_id = session["metadata"].get("subscription_id")
+
+            with transaction.atomic():
+                try:
+                    subscription = BookSubScription.objects.select_for_update().get(id=sub_id)
+                except BookSubScription.DoesNotExist:
+                    subscription = None
+
+                if subscription and subscription.status == BookSubScription.STATUS_PENDING:
+                    now = timezone.now()
+                    subscription.status = BookSubScription.STATUS_ACTIVE
+                    subscription.stripe_payment_intent_id = session.get("payment_intent")
+                    subscription.start_date = now
+                    subscription.end_date = now + relativedelta(months=subscription.subscription_duration)
+                    subscription.save()
+
+                    subscription.book.is_available = True
+                    subscription.book.save(update_fields=["is_available"])
+
+        elif event["type"] in ("checkout.session.expired", "payment_intent.payment_failed"):
+            session = event["data"]["object"]
+            sub_id = session.get("metadata", {}).get("subscription_id")
+            if sub_id:
+                BookSubScription.objects.filter(
+                    id=sub_id, status=BookSubScription.STATUS_PENDING
+                ).update(status=BookSubScription.STATUS_FAILED)
+
+        StripeWebHookEvent.objects.create(event_id=event["id"], event_type=event["type"])
+        return Response(status=200)
