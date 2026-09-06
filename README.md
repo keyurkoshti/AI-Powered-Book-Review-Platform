@@ -1,4 +1,4 @@
-# 📚 Book Review App
+# Book Review App
 
 A simple Book Review web application built using **Python**, **Django**, and **MySQL**. Users can register, log in, submit book reviews, and view reviews submitted by other users. The project also includes REST APIs built with Django REST Framework (DRF), which are called using JavaScript Fetch API.
 
@@ -9,6 +9,7 @@ A simple Book Review web application built using **Python**, **Django**, and **M
 - Python
 - Django
 - Django REST Framework (DRF)
+- Celery
 - MySQL
 - HTML
 - CSS
@@ -31,6 +32,96 @@ A simple Book Review web application built using **Python**, **Django**, and **M
 - Stripe Payment - like subscription to add book for normal user (1,3,6,12 months)
 ---
 
+## AI-Powered Review Improvement
+
+The application includes an **AI-powered Review Improvement feature** that helps users improve the quality, clarity, and professionalism of their book reviews while preserving the original meaning.
+
+### How It Works
+
+When a user writes a review, they can use the **"Improve with AI"** feature.
+
+```text
+User writes review
+        ↓
+Click "Improve with AI"
+        ↓
+Django REST API
+        ↓
+Authentication & Review Ownership Check
+        ↓
+OpenRouter API
+        ↓
+AI Model
+        ↓
+Improved Review
+        ↓
+Return response to user
+```
+
+### 🔧 AI Technology
+
+* **OpenRouter API** – AI model gateway
+* **OpenAI Python SDK** – API client
+* **Django REST Framework** – AI API endpoint
+* **Cookie-based JWT Authentication** – protects the endpoint
+* **Environment Variables** – securely stores API credentials
+
+### AI Review Endpoint
+
+```http
+POST /api/reviews/improve/
+```
+
+Example request:
+
+```json
+{
+    "review_text": "This book is very good and I like the story because it is interesting."
+}
+```
+
+Example response:
+
+```json
+{
+    "improved_review": "This book offers an engaging and compelling story that kept me interested throughout. The well-developed narrative makes it an enjoyable read."
+}
+```
+
+### Security
+
+The AI endpoint is protected using authentication. Before sending the review to the AI service, the backend verifies that:
+
+* The user is authenticated.
+* The review belongs to the requesting user.
+* The submitted review meets the required validation rules.
+* The API key is stored securely as an environment variable and is not exposed in the source code.
+
+### AI Configuration
+
+The AI request is configured with parameters such as:
+
+* **Temperature** – controls the creativity/randomness of the generated response.
+* **Max Tokens** – limits the maximum amount of generated text.
+* **Timeout** – prevents the application from waiting indefinitely for the external AI service.
+
+The system prompt instructs the model to behave as a **professional book-review editor** and return only the improved review.
+
+### Design Goal
+
+The feature is designed to **assist the user rather than replace their writing**. The AI improves grammar, clarity, readability, and professional tone while attempting to preserve the original meaning of the user's review.
+
+### Example
+
+**Original Review**
+
+> "This book is very good and I like the story. Some parts are little boring but overall I enjoyed reading it."
+
+**AI Improved Review**
+
+> "This book offers an engaging story that was enjoyable to read overall. Although a few sections felt slightly slow, the compelling narrative made the book a satisfying experience."
+
+
 ## REST APIs
 
 - Register API
@@ -40,6 +131,7 @@ A simple Book Review web application built using **Python**, **Django**, and **M
 - JWT Token Refresh API
 - checkoutSession payment API
 - Stripe Webhook API
+- AI Power Review Improvement
 
 ### Create Virtual Environment
 
