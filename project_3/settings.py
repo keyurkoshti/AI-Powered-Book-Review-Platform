@@ -94,6 +94,9 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_PASSWORD'),
         'HOST': os.getenv('DB_HOST'),
         'PORT': os.getenv('DB_PORT'),
+
+        # keep database connections alive
+        'CONN_MAX_AGE': 60,
     }
 }
 
@@ -149,6 +152,13 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "book_review.authentication.CookieJWTAuthentication",
     ),
+},
+
+REST_FRAMEWORK = {
+    "DEFAULT_THROTTLE_RATES": {
+        'login_limit': '5/minute',
+        'user': '1000/day',
+    }
 }
 
 # --------------------------jwt refresh token------------------------------
@@ -179,3 +189,25 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+
+
+# Celery task (background jobs)
+CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
+CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"
+CELERY_TASK_ALWAYS_EAGER = False
+CELERY_TASK_EAGER_PROPAGATES = False 
+
+# 🎯 ADD THESE TWO LINES TO FIX THE DOCKER LAG:
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_REDIS_BACKEND_USE_SSL = False  # Ensures no SSL overhead locally
+# Keeps connections open instead of closing them
+CELERY_BROKER_POOL_LIMIT = 10  
+
+# WARNING: DO NOT USE THIS IN PRODUCTION! IT MAKES PASSWORDS UNSECURE.
+# Use this locally only to confirm if hashing is causing your 1.79s slowdown.
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.Argon2PasswordHasher', 
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.MD5PasswordHasher',
+]

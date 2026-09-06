@@ -6,7 +6,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 class UserProfileManager(BaseUserManager):
 
-    def create_user(self, email, user_name, password=None, **extra_fields):
+    def create_user(self, email, user_name, password, **extra_fields):
 
         if not email:
             raise ValueError("Email is required")
@@ -26,6 +26,12 @@ class UserProfileManager(BaseUserManager):
 
     def create_superuser(self, email, user_name, password=None, **extra_fields):
 
+        extra_fields.setdefault('is_staff', False)
+        extra_fields.setdefault('is_superuser', False)
+
+        return self._create_user(email, user_name, password, **extra_fields)
+        
+    def create_superuser(self, email, user_name, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
@@ -36,20 +42,17 @@ class UserProfileManager(BaseUserManager):
         if extra_fields.get('is_superuser') is not True:
             raise ValueError("Superuser must have is_superuser=True")
 
-        return self.create_user(
-            email=email,
-            user_name=user_name,
-            password=password,
-            **extra_fields
-        )
+        return self.create_user(email=email,user_name=user_name,password=password,**extra_fields)
 
 
 # ------------------User Model----------------------
 class UserProfile(AbstractUser):
     username = None
 
-    user_name = models.CharField(max_length=50, null=False, unique=False)
-    email = models.EmailField(max_length=100, null=False, unique=True)
+    user_name = models.CharField(max_length=50, null=False, unique=False, db_index=True)
+    email = models.EmailField(max_length=254, null=False, unique=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    date_joined = models.DateTimeField(auto_now_add=True, db_index=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['user_name']
@@ -67,27 +70,23 @@ class Category(models.Model):
     def __str__(self):
         return f"{self.name}"
 
-
-
 # ---------------------Book Model--------------------------------
 class Book(models.Model):
     title = models.CharField(max_length=100)
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name="books")
     author = models.CharField(max_length=100)
     description = models.TextField()
     added_by = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name="book_added")
     is_available = models.BooleanField(default=False)
-    
+    date_added = models.DateTimeField(auto_now_add=True)
     def __str__(self):
         return f"{self.title}"
-    
-
 
 # -----------------book review model------------------------------
 class Book_Review_forms(models.Model):
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, null=True, blank=True)
     book = models.ForeignKey(Book, on_delete=models.CASCADE, null=True, blank=True)
-    book_photo=models.ImageField(upload_to='book_photos/')
+    book_photo=models.ImageField(upload_to='book_photos/', null=True, blank=True)
     book_url=models.URLField()
     rating = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(5)], null=True, blank=True)
     book_review=models.CharField(max_length=500)
@@ -101,10 +100,11 @@ class RefreshTokenStore(models.Model):
     user = models.OneToOneField(
         UserProfile,
         on_delete=models.CASCADE,
-        related_name="refresh_token_store"
+        related_name="refresh_token_store",
+        db_index=True
     )
-    refresh_token = models.TextField()
-    expires_at = models.DateTimeField()
+    refresh_token = models.CharField(max_length=511, db_index=True)
+    expires_at = models.DateTimeField(db_index=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
@@ -162,3 +162,6 @@ class StripeWebHookEvent(models.Model):
     event_id = models.CharField(max_length=255, unique=True)
     event_type = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.event_id} - {self.created_at}"

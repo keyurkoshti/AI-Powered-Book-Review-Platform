@@ -1,26 +1,21 @@
 from rest_framework import serializers
 from .models import UserProfile, Book_Review_forms, Book, Category
 from better_profanity import profanity
-
+from rest_framework.validators import UniqueValidator, ValidationError
+from django.contrib.auth import authenticate
 
 # --------------------------Register Serializer---------------------------
 class RegisterSerializer(serializers.Serializer):
-    user_name = serializers.CharField(max_length=100, required=False)
-    username = serializers.CharField(max_length=100, required=False)
-    email = serializers.EmailField()
+    user_name = serializers.CharField(max_length=100, required=True)
+    email = serializers.EmailField(validators=[UniqueValidator(queryset=UserProfile.objects.all(), message="User with this email already exsits !")])
     password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
-        user_name = attrs.get('user_name') or attrs.get('username')
+        user_name = attrs.get('user_name')
         if not user_name:
             raise serializers.ValidationError({"user_name": "Username is required."})
         attrs['user_name'] = user_name
         return attrs
-
-    def validate_email(self, value):
-        if UserProfile.objects.filter(email=value).exists():
-            raise serializers.ValidationError("User with this email already exists.")
-        return value
 
     def create(self, validated_data):
         user_name = validated_data.get('user_name')
@@ -32,6 +27,16 @@ class RegisterSerializer(serializers.Serializer):
             password=password
         )
 
+# -------------------------Login Serializer-----------------------------
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only = True)
+
+    def validate(self, data):
+        user = authenticate(username = data.get('email'), password = data.get('password'))
+        if not user:
+            raise serializers.ValidationError('invalid email or password')
+        return user
 
 # --------------------------Home-page Serializer---------------------------
 class HomepageSerializer(serializers.ModelSerializer):
@@ -146,4 +151,16 @@ class AddBookSerializer(serializers.ModelSerializer):
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['id', 'name']
+        fields = ['id', 'name']
+
+
+# --------------------------Ai Geenrated Review Serializer---------------------------------
+class ReviewImproveSerializer(serializers.Serializer):
+    review_text = serializers.CharField(min_length=10, max_length=2000, trim_whitespace=True)
+
+    def validate_review_text(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("review text can not be empty")
+        return value
+    
+

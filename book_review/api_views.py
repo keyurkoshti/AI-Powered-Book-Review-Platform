@@ -2,19 +2,33 @@ from rest_framework.views import APIView
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import RegisterSerializer, HomepageSerializer, ProfileSerializer, CreateReviewSerializer, AddBookSerializer, BookListSerializer, CategorySerializer
+from rest_framework.throttling import AnonRateThrottle
+from rest_framework.pagination import PageNumberPagination
+from .serializers import RegisterSerializer, LoginSerializer, HomepageSerializer, ProfileSerializer, CreateReviewSerializer, AddBookSerializer, BookListSerializer, CategorySerializer, ReviewImproveSerializer
 from django.contrib.auth import authenticate, logout, get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from .authentication import CookieJWTAuthentication
 from django.core.cache import cache
+from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import UserProfile, Book_Review_forms, Book, Category, RefreshTokenStore, BookSubScription, StripeWebHookEvent
-from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
 from django.utils import timezone
 from django.db import transaction, IntegrityError
 from dotenv import load_dotenv
 from dateutil import relativedelta
+from .tasks import send_email_task
+from project_3.celery import app as celery_app
+from redis import Redis
+from openai import OpenAI
 import stripe
+import threading
+import json
+import time
+import os
+
+# golbal redis connection pool
+redis_client = Redis(host='127.0.0.1', port=6379, db=0)
 
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -54,137 +68,15 @@ class RegisterApiview(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
 
-    def perform_create(self, serializer):
-        user = serializer.save()
-
-        try:
-            email = EmailMultiAlternatives(
-                subject="Welcome to Book Review",
-                body=f"""
-                    Hi {user.user_name},
-
-                    Welcome to Book Review! Your account has been created successfully.
-
-                    Here's what you can do next:
-
-                    1. LOGIN TO YOUR ACCOUNT
-                    Go to the login page and enter your credentials:
-                    Username: {user.user_name}
-                    Password: (the password you created during registration)
-
-                    2. EXPLORE BOOKS
-                    Browse reviews from other readers to discover your next great read.
-
-                    3. WRITE A REVIEW
-                    Share your thoughts on books you've read and help others make informed choices.
-
-                    4. BUILD YOUR PROFILE
-                    Track your reading journey by managing your reviews and profile.
-
-                    Login link: http://localhost:8000/login/
-
-                    Need help? Reply to this email and we'll assist you.
-
-                    Happy reading!
-                    The Book Review Team
-                    """,
-                from_email="Book Review <{}>".format(settings.EMAIL_HOST_USER),
-                to=[user.email],
-            )
-
-            html = f"""
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                </head>
-                <body style="margin:0; padding:0; background-color:#f4f4f4; font-family:Arial, Helvetica, sans-serif;">
-                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-                        <tr>
-                            <td style="padding:40px 20px;">
-                                <table role="presentation" cellpadding="0" cellspacing="0" width="600" align="center" style="background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.1);">
-                                    <!-- Header -->
-                                    <tr>
-                                        <td style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding:30px 40px; text-align:center;">
-                                            <h1 style="color:#ffffff; font-size:28px; margin:0;">Welcome to Book Review</h1>
-                                        </td>
-                                    </tr>
-                                    <!-- Body -->
-                                    <tr>
-                                        <td style="padding:40px;">
-                                            <p style="font-size:16px; color:#333333; margin:0 0 10px 0;">Hi <strong>{user.user_name}</strong>,</p>
-                                            <p style="font-size:16px; color:#333333; margin:0 0 20px 0;">Welcome to <strong>Book Review</strong>! Your account has been created successfully.</p>
-
-                                            <h3 style="color:#667eea; font-size:18px; margin:30px 0 15px 0;">📚 What's Next?</h3>
-
-                                            <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-                                                <tr>
-                                                    <td style="padding:12px 0; border-bottom:1px solid #eeeeee;">
-                                                        <p style="font-size:15px; color:#333333; margin:0;"><strong>1. Login to Your Account</strong></p>
-                                                        <p style="font-size:14px; color:#666666; margin:5px 0 0 0;">Use your username and password to sign in.</p>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td style="padding:12px 0; border-bottom:1px solid #eeeeee;">
-                                                        <p style="font-size:15px; color:#333333; margin:0;"><strong>2. Explore Books</strong></p>
-                                                        <p style="font-size:14px; color:#666666; margin:5px 0 0 0;">Browse reviews from other readers and discover new books.</p>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td style="padding:12px 0; border-bottom:1px solid #eeeeee;">
-                                                        <p style="font-size:15px; color:#333333; margin:0;"><strong>3. Write a Review</strong></p>
-                                                        <p style="font-size:14px; color:#666666; margin:5px 0 0 0;">Share your thoughts and help others find great reads.</p>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td style="padding:12px 0;">
-                                                        <p style="font-size:15px; color:#333333; margin:0;"><strong>4. Build Your Profile</strong></p>
-                                                        <p style="font-size:14px; color:#666666; margin:5px 0 0 0;">Track your reading journey and manage your reviews.</p>
-                                                    </td>
-                                                </tr>
-                                            </table>
-
-                                            <!-- CTA Button -->
-                                            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:30px 0;">
-                                                <tr>
-                                                    <td align="center">
-                                                        <a href="http://localhost:8000/login/" style="display:inline-block; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:#ffffff; text-decoration:none; font-size:16px; font-weight:bold; padding:14px 40px; border-radius:6px;">Login to Your Account</a>
-                                                    </td>
-                                                </tr>
-                                            </table>
-
-                                            <hr style="border:none; border-top:1px solid #eeeeee; margin:20px 0;">
-
-                                            <p style="font-size:14px; color:#999999; margin:0 0 5px 0;">Need help? Reply to this email and we'll assist you.</p>
-                                            <p style="font-size:14px; color:#999999; margin:0;">Happy reading!</p>
-                                            <p style="font-size:14px; color:#999999; margin:10px 0 0 0;"><strong>The Book Review Team</strong></p>
-                                        </td>
-                                    </tr>
-                                    <!-- Footer -->
-                                    <tr>
-                                        <td style="background-color:#f8f8f8; padding:20px 40px; text-align:center;">
-                                            <p style="font-size:12px; color:#bbbbbb; margin:0;">You received this email because you registered on Book Review.</p>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </td>
-                        </tr>
-                    </table>
-                </body>
-                </html>
-            """
-            email.extra_headers = {
-                'Reply-To': settings.EMAIL_HOST_USER,
-                'X-Mailer': 'Django',
-            }
-            email.attach_alternative(html, "text/html")
-            email.send()
-        except Exception:
-            pass
-
     def create(self, request, *args, **kwargs):
-        super().create(request, *args, **kwargs)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        with transaction.atomic():
+            user = serializer.save()
+            transaction.on_commit(lambda: send_email_task.delay(user.id))
+        
+        # 4. Return response instantly back to the client
         return Response(
             {"message": "User created successfully"},
             status=status.HTTP_201_CREATED
@@ -192,41 +84,25 @@ class RegisterApiview(generics.CreateAPIView):
 
 
 # ------------------------Login Api (sets HttpOnly cookies)--------------------------------
+class LoginRateLimit(AnonRateThrottle):
+    scope = "login_limit"
+
 class LoginApiview(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [LoginRateLimit]
 
     def post(self, request):
-        email = request.data.get("email") or request.data.get("username")
-        password = request.data.get("password")
-
-        if not email or not password:
-            return Response(
-                {"error": "Email/Username and Password are required."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        user = authenticate(request=request, email=email, password=password)
-
-        if user is None:
-            try:
-                user_obj = UserProfile.objects.filter(user_name=email).first()
-                if user_obj:
-                    user = authenticate(request=request, email=user_obj.email, password=password)
-            except Exception:
-                pass
-
-        if user is None:
-            return Response(
-                {"error": "Invalid username/email or password."},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data
 
         access = AccessToken.for_user(user)
         refresh = RefreshToken.for_user(user)
         access_token = str(access)
         refresh_token = str(refresh)
 
-        store_refresh_token(user, refresh_token)
+        with transaction.atomic():
+            transaction.on_commit(lambda: store_refresh_token(user, refresh_token))
 
         response = Response(
             {
@@ -261,15 +137,36 @@ class LoginApiview(APIView):
 
 
 # ------------------------Home-page Api--------------------------
+class HomePagePagination(PageNumberPagination):
+    page_size = 10
+    max_page_size = 50
+    page_query_param = "page"
+
 class HomepageApiview(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
+    authentication_classes = [CookieJWTAuthentication]
+
     serializer_class = HomepageSerializer
-    queryset = Book_Review_forms.objects.select_related("user", "book").order_by("-id")
+    pagination_class = HomePagePagination
+    
+    def get_queryset(self):
+        queryset = Book_Review_forms.objects.select_related("user", "book").order_by("-id")
+        search = self.request.query_params.get("search")
+
+        if search:
+            queryset = queryset.filter(
+                Q(book__title__icontains=search) | 
+                Q(book__category__name__icontains=search) |
+                Q(book__author__icontains=search)
+            )
+
+        return queryset
 
 
 # ------------------------Profile-page Api--------------------------
 class ProfileAPIView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
+    authentication_classes = [CookieJWTAuthentication]
     serializer_class = ProfileSerializer
 
     def get_object(self):
@@ -366,6 +263,7 @@ class LogoutAPIView(APIView):
 # ------------------------Category List API--------------------------
 class CategoryListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
+    authentication_classes = [CookieJWTAuthentication]
     serializer_class = CategorySerializer
     queryset = Category.objects.all()
 
@@ -373,6 +271,7 @@ class CategoryListAPIView(generics.ListAPIView):
 # ------------------------Book List API (for dropdown)--------------------------
 class BookListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
+    authentication_classes = [CookieJWTAuthentication]
     serializer_class = BookListSerializer
     queryset = Book.objects.all().select_related('category')
 
@@ -380,6 +279,7 @@ class BookListAPIView(generics.ListAPIView):
 # ------------------------Create Review API--------------------------
 class CreateReviewAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
+    authentication_classes = [CookieJWTAuthentication]
     serializer_class = CreateReviewSerializer
 
     def perform_create(self, serializer):
@@ -393,9 +293,10 @@ class CreateReviewAPIView(generics.CreateAPIView):
         )
 
 
-# ------------------------Add Book API (Admin only)--------------------------
+# ------------------------Add Book API--------------------------------
 class AddBookAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
+    authentication_classes = [CookieJWTAuthentication]
     serializer_class = AddBookSerializer
 
     def perform_create(self, serializer):
@@ -414,6 +315,7 @@ class AddBookAPIView(generics.CreateAPIView):
 # -----------------------Stripe Integration----------------------------
 class CreateCheckoutSessionAPIView(APIView):
     permission_classes = [IsAuthenticated]
+    authentication_classes = [CookieJWTAuthentication]
 
     def post(self, request, book_id):
         duration = request.data.get("subscription_duration")
@@ -437,7 +339,7 @@ class CreateCheckoutSessionAPIView(APIView):
                     status = BookSubScription.STATUS_PENDING
                 )
 
-        except book.DoesNotExist:
+        except Book.DoesNotExist:
             return Response({"error":"book not found"}, status=404)
         except IntegrityError:
             return Response({"error":"This book was just taken by another user."}, status=409)
@@ -519,3 +421,75 @@ class StripeWebhookAPIView(APIView):
 
         StripeWebHookEvent.objects.create(event_id=event["id"], event_type=event["type"])
         return Response(status=200)
+    
+
+class AiReviewAPIView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [CookieJWTAuthentication]
+    serializer_class = ReviewImproveSerializer
+
+    def post(self, request):
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        review_text = serializer.validated_data["review_text"]
+
+        try:
+            api_key = os.getenv("OPENAI_API_KEY")
+
+            if not api_key:
+                raise ValueError(
+                    "OPENAI_API_KEY is not configured"
+                )
+
+            client = OpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=api_key,
+                timeout=15.0
+            )
+
+            response = client.chat.completions.create(
+                model="nvidia/nemotron-3-ultra-550b-a55b:free",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a professional book review editor. "
+                            "Improve the user's review while preserving "
+                            "their original meaning, opinion, and personal voice. "
+                            "Fix grammar, spelling, clarity, and sentence structure. "
+                            "Do not add new facts or opinions. "
+                            "Keep the review approximately the same length. "
+                            "Return only the improved review."
+                        )
+                    },
+                    {
+                        "role": "user",
+                        "content": review_text
+                    }
+                ],
+                temperature=0.3,
+                max_tokens=300
+            )
+
+            improved_review = (response.choices[0].message.content.strip())
+
+            return Response(
+                {
+                    "original_review": review_text,
+                    "improved_review": improved_review
+                },
+                status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+
+            print("openai error:", repr(e))
+
+            return Response(
+                {
+                    "detail": "uable to improve review right now."
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
