@@ -52,7 +52,7 @@ class UserProfile(AbstractUser):
     user_name = models.CharField(max_length=50, null=False, unique=False, db_index=True)
     email = models.EmailField(max_length=254, null=False, unique=True)
     is_active = models.BooleanField(default=True, db_index=True)
-    date_joined = models.DateTimeField(auto_now_add=True, db_index=True)
+    date_joined = models.DateTimeField(auto_now=True, db_index=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['user_name']
@@ -78,7 +78,7 @@ class Book(models.Model):
     description = models.TextField()
     added_by = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name="book_added")
     is_available = models.BooleanField(default=False)
-    date_added = models.DateTimeField(auto_now_add=True)
+    date_added = models.DateTimeField(auto_now=True)
     def __str__(self):
         return f"{self.title}"
 
@@ -95,7 +95,7 @@ class Book_Review_forms(models.Model):
     def __str__(self):
         return f"{self.book} - {self.user}"
 
-
+# -----------------Refresh Token Store Model------------------------------
 class RefreshTokenStore(models.Model):
     user = models.OneToOneField(
         UserProfile,
@@ -113,7 +113,7 @@ class RefreshTokenStore(models.Model):
     def is_valid(self):
         return timezone.now() < self.expires_at
     
-
+# -----------------Book Subscription Model------------------------------
 class BookSubScription(models.Model):
     STATUS_PENDING   = 'pending'
     STATUS_ACTIVE    = 'active'
@@ -158,10 +158,40 @@ class BookSubScription(models.Model):
     def is_active(self):
         return self.status == self.STATUS_ACTIVE and self.end_date and self.end_date > timezone.now()
 
+# -----------------Stripe Webhook Event Model------------------------------
 class StripeWebHookEvent(models.Model):
     event_id = models.CharField(max_length=255, unique=True)
     event_type = models.CharField(max_length=100)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.event_id} - {self.created_at}"
+
+# -----------------User AI Credit Model------------------------------
+class UserAiCredit(models.Model):
+    user = models.OneToOneField(UserProfile, on_delete=models.CASCADE, related_name="ai_credit")
+    total_credits = models.PositiveBigIntegerField(default=10)
+    remaining_credits = models.PositiveBigIntegerField(default=10)
+    total_used_credits = models.PositiveBigIntegerField(default=0)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.email} - {self.remaining_credits} credits"
+    
+# -----------------AI Usage Log Model------------------------------
+class AiUsageLog(models.Model):
+    status_choices = (("success", "Success"), 
+                      ("failed", "Failed"))
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="ai_usage_logs")
+    feature = models.CharField(max_length=100)
+    model_name = models.CharField(max_length=150)
+    credits_used = models.PositiveIntegerField(default=1)
+    input_tokens = models.PositiveIntegerField(default=0)
+    output_tokens = models.PositiveIntegerField(default=0)
+    status = models.CharField(max_length=20,choices=status_choices)
+    response_time_ms = models.PositiveIntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.user.email} - {self.feature}"

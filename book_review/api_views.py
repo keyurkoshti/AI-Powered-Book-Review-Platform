@@ -11,7 +11,7 @@ from .authentication import CookieJWTAuthentication
 from django.core.cache import cache
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import UserProfile, Book_Review_forms, Book, Category, RefreshTokenStore, BookSubScription, StripeWebHookEvent
+from .models import UserProfile, Book_Review_forms, Book, Category, RefreshTokenStore, BookSubScription, StripeWebHookEvent, UserAiCredit, AiUsageLog
 from django.conf import settings
 from django.utils import timezone
 from django.db import transaction, IntegrityError
@@ -327,9 +327,11 @@ class CreateCheckoutSessionAPIView(APIView):
         try:
             with transaction.atomic():
                 book = Book.objects.select_for_update().get(id=book_id)
-                already_taken = BookSubScription.objects.filter(book=book, status__in=['pending', 'active']).exists()
+
+                already_taken = BookSubScription.objects.filter(book=book, status__in=[BookSubScription.STATUS_PENDING, BookSubScription.STATUS_ACTIVE]).exists()
                 if already_taken:
-                    return Response({"error":"This book already has a payment in progress or an active subscription."})
+                    return Response({"error":"This book already has a payment in progress or an active subscription."},
+                                    status=status.HTTP_409_CONFLICT)
                 price = SUBSCRIPTION_PRICES[duration]
                 subscription = BookSubScription.objects.create(
                     user = request.user,
@@ -340,9 +342,9 @@ class CreateCheckoutSessionAPIView(APIView):
                 )
 
         except Book.DoesNotExist:
-            return Response({"error":"book not found"}, status=404)
+            return Response({"error":"book not found"}, status=status.HTTP_404_NOT_FOUND)
         except IntegrityError:
-            return Response({"error":"This book was just taken by another user."}, status=409)
+            return Response({"error":"This book was just taken by another user."}, status=status.HTTP_409_CONFLICT)
         
         try:
             session = stripe.checkout.Session.create(
@@ -363,17 +365,27 @@ class CreateCheckoutSessionAPIView(APIView):
                 },
                 success_url="http://localhost:8000/payment/success?session_id={CHECKOUT_SESSION_ID}",
                 cancel_url="http://localhost:8000/payment/cancel",
+                idempotency_key=f"subscription-{subscription.id}",
             )
-        except Exception as e:
+
+        except stripe.error.StripeError:
+            subscription.status = BookSubScription.STATUS_FAILED
+            subscription.save(update_fields=['status'])
+            return Response({"error": "Could not start payment. Please try again."}, status=status.HTTP_502_BAD_GATEWAY)
+        
+        except Exception:
             subscription.status = BookSubScription.STATUS_FAILED
             subscription.save(update_fields=["status"])
-            return Response({"error": "Could not start payment.", "detail": str(e)}, status=502)
+            return Response({"error": "Could not start payment."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         subscription.stripe_checkout_session_id = session.id
         subscription.save(update_fields=["stripe_checkout_session_id"])
 
-        return Response({"checkout_url": session.url}, status=200)
-    
+        return Response(
+            {"checkout_url": session.url,
+             "subscription_id": subscription.id}, 
+            status=status.HTTP_200_OK) 
+
 class StripeWebhookAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -383,45 +395,100 @@ class StripeWebhookAPIView(APIView):
 
         try:
             event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
-        except (ValueError, stripe.error.SignatureVerificationError):
-            return Response(status=400)
+        except ValueError:
+            return Response(
+                {"error":"invalid payload"},
+                status = status.HTTP_400_BAD_REQUEST
+            )
+        except stripe.SignatureVerificationError:
+            return Response(
+                {"error":"invalid signature"},
+                status = status.HTTP_400_BAD_REQUEST
+            )
+
+        event_id = event["id"]
+        event_type = event["type"]
 
         # idempotency
-        if StripeWebHookEvent.objects.filter(event_id=event["id"]).exists():
-            return Response(status=200)
+        if StripeWebHookEvent.objects.filter(event_id=event_id).exists():
+            return Response(
+                {"message": "Event already processed."},
+                status=status.HTTP_200_OK)
 
-        if event["type"] == "checkout.session.completed":
-            session = event["data"]["object"]
-            sub_id = session["metadata"].get("subscription_id")
-
+        try:
             with transaction.atomic():
-                try:
-                    subscription = BookSubScription.objects.select_for_update().get(id=sub_id)
-                except BookSubScription.DoesNotExist:
-                    subscription = None
+                if event_type == "checkout.session.completed":
+                    session = event["data"]["object"]
+                    sub_id = session["metadata"].get("subscription_id")
 
-                if subscription and subscription.status == BookSubScription.STATUS_PENDING:
-                    now = timezone.now()
-                    subscription.status = BookSubScription.STATUS_ACTIVE
-                    subscription.stripe_payment_intent_id = session.get("payment_intent")
-                    subscription.start_date = now
-                    subscription.end_date = now + relativedelta(months=subscription.subscription_duration)
-                    subscription.save()
+                    if not sub_id:
+                        return Response(
+                            {"error": "Invalid event data."},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
 
-                    subscription.book.is_available = True
-                    subscription.book.save(update_fields=["is_available"])
+                    subscription = BookSubScription.objects.select_for_update().filter(id=sub_id).first()
 
-        elif event["type"] in ("checkout.session.expired", "payment_intent.payment_failed"):
-            session = event["data"]["object"]
-            sub_id = session.get("metadata", {}).get("subscription_id")
-            if sub_id:
-                BookSubScription.objects.filter(
-                    id=sub_id, status=BookSubScription.STATUS_PENDING
-                ).update(status=BookSubScription.STATUS_FAILED)
+                    if not subscription:
+                        return Response(
+                            {"error": "Subscription not found."},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        )
 
-        StripeWebHookEvent.objects.create(event_id=event["id"], event_type=event["type"])
-        return Response(status=200)
-    
+                    if subscription.status == BookSubScription.STATUS_PENDING:
+                        now = timezone.now()
+                        subscription.status = BookSubScription.STATUS_ACTIVE
+                        subscription.stripe_payment_intent_id = session.get("payment_intent")
+                        subscription.start_date = now
+                        subscription.end_date = now + relativedelta(months=subscription.subscription_duration)
+                        subscription.save()
+
+                        book = Book.objects.select_for_update().get(id=subscription.book_id)
+
+                        book.is_available = True
+                        book.save(update_fields=["is_available"])
+
+                elif event_type == "checkout.session.expired":
+                    session = event["data"]["object"]
+                    sub_id = session.get("metadata", {}).get("subscription_id")
+                    if sub_id:
+                        BookSubScription.objects.filter(
+                            id=sub_id, status=BookSubScription.STATUS_PENDING
+                        ).update(status=BookSubScription.STATUS_FAILED)
+
+                elif event_type == "payment_intent.payment_failed":
+                    payment_intent = event["data"]["object"]
+                    sub_id = payment_intent.get("metadata", {}).get("subscription_id")
+                    if sub_id:
+                        BookSubScription.objects.filter(
+                            id=sub_id, status=BookSubScription.STATUS_PENDING
+                        ).update(status=BookSubScription.STATUS_FAILED)
+                
+                StripeWebHookEvent.objects.create(event_id=event_id, event_type=event_type)
+
+        except IntegrityError:
+            if StripeWebHookEvent.objects.filter(event_id=event_id).exists():
+                return Response(
+                    {"message":"event already processed"},
+                    status=status.HTTP_200_OK
+                )
+            return Response(
+                {"error": "temporary processing failure."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        except Exception:
+            return Response(
+                {"error": "temporary processing failure."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        return Response(
+            {"message":"webhook processed successfully"},
+            status=status.HTTP_200_OK)
+
+
+FEATURE_REVIEW_IMPROVEMENT = "review_improvement"
+AI_MODEL_NAME = "nvidia/nemotron-3-ultra-550b-a55b:free"
 
 class AiReviewAPIView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
@@ -429,28 +496,47 @@ class AiReviewAPIView(generics.GenericAPIView):
     serializer_class = ReviewImproveSerializer
 
     def post(self, request):
-
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         review_text = serializer.validated_data["review_text"]
 
         try:
-            api_key = os.getenv("OPENAI_API_KEY")
+            with transaction.atomic():
+                credit = UserAiCredit.objects.select_for_update().get(user=request.user)
+                if credit.remaining_credits <= 0:
+                    return Response(
+                        {
+                            "success": False,
+                            "detail": "AI credits exhausted.",
+                            "remaining_credits": 0,
+                        },
+                        status=status.HTTP_429_TOO_MANY_REQUESTS,
+                    )
+                credit.remaining_credits -= 1
+                credit.total_used_credits += 1
+                credit.save(update_fields=["remaining_credits", "total_used_credits", "updated_at"])
+                remaining_credits = credit.remaining_credits
+        except UserAiCredit.DoesNotExist:
+            return Response(
+                {"success": False, 
+                 "detail": "AI credit account not found"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
+        start_time = time.monotonic()
+        try:
+            api_key = os.getenv("OPENAI_API_KEY")
             if not api_key:
-                raise ValueError(
-                    "OPENAI_API_KEY is not configured"
-                )
+                raise ValueError("OPENAI_API_KEY is not configured")
 
             client = OpenAI(
                 base_url="https://openrouter.ai/api/v1",
                 api_key=api_key,
-                timeout=15.0
+                timeout=15.0,
             )
 
             response = client.chat.completions.create(
-                model="nvidia/nemotron-3-ultra-550b-a55b:free",
+                model=AI_MODEL_NAME,
                 messages=[
                     {
                         "role": "system",
@@ -462,34 +548,65 @@ class AiReviewAPIView(generics.GenericAPIView):
                             "Do not add new facts or opinions. "
                             "Keep the review approximately the same length. "
                             "Return only the improved review."
-                        )
+                        ),
                     },
-                    {
-                        "role": "user",
-                        "content": review_text
-                    }
+                    {"role": "user", "content": review_text},
                 ],
                 temperature=0.3,
-                max_tokens=300
+                max_tokens=300,
             )
 
-            improved_review = (response.choices[0].message.content.strip())
+            response_time_ms = int((time.monotonic() - start_time) * 1000)
+            improved_review = response.choices[0].message.content.strip()
+
+            AiUsageLog.objects.create(
+                user=request.user,
+                feature=FEATURE_REVIEW_IMPROVEMENT,
+                model_name=AI_MODEL_NAME,
+                credits_used=1,
+                input_tokens=getattr(response.usage, "prompt_tokens", 0) if response.usage else 0,
+                output_tokens=getattr(response.usage, "completion_tokens", 0) if response.usage else 0,
+                status="success",
+                response_time_ms=response_time_ms,
+            )
 
             return Response(
                 {
+                    "success": True,
                     "original_review": review_text,
-                    "improved_review": improved_review
+                    "improved_review": improved_review,
+                    "ai_credits": {"remaining": remaining_credits},
                 },
-                status=status.HTTP_200_OK
+                status=status.HTTP_200_OK,
             )
 
         except Exception as e:
+            response_time_ms = int((time.monotonic() - start_time) * 1000)
 
-            print("openai error:", repr(e))
+            try:
+                with transaction.atomic():
+                    credit = UserAiCredit.objects.select_for_update().get(user=request.user)
+                    credit.remaining_credits += 1
+                    credit.total_used_credits -= 1
+                    credit.save(update_fields=["remaining_credits", "total_used_credits", "updated_at"])
+                    remaining_credits = credit.remaining_credits
+
+                AiUsageLog.objects.create(
+                    user=request.user,
+                    feature=FEATURE_REVIEW_IMPROVEMENT,
+                    model_name=AI_MODEL_NAME,
+                    credits_used=0,
+                    status="failed",
+                    response_time_ms=response_time_ms,
+                )
+            except UserAiCredit.DoesNotExist:
+                remaining_credits = None
 
             return Response(
                 {
-                    "detail": "uable to improve review right now."
+                    "success": False,
+                    "detail": "unable to improve review right now.",
+                    "ai_credits": {"remaining": remaining_credits},
                 },
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
