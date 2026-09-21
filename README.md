@@ -169,3 +169,74 @@ Stripe needs a way to reach your local server to send payment events (checkout c
 
 ### Note 
 This secret changes every time you restart `stripe listen`. Keep this terminal running throughout your dev session — if you restart it, update `.env` with the new secret.
+
+
+
+## Stripe Payment & Subscription Flow
+
+The platform uses Stripe Checkout for book subscriptions.
+Payment activation is handled through Stripe webhooks rather than
+trusting the frontend success redirect.
+
+```mermaid
+flowchart TD
+
+    A[User submits book + subscription duration] --> B[Django validates form]
+
+    B --> C{Valid duration?}
+
+    C -- No --> D[Show validation error]
+    C -- Yes --> E[Create Book]
+
+    E --> F[Create BookSubscription<br/>status = PENDING]
+
+    F --> G[Create Stripe Checkout Session]
+
+    G --> H{Stripe Checkout}
+
+    H -- Payment failed/cancelled --> I[Subscription FAILED]
+    I --> J[Book remains unavailable]
+
+    H -- Payment successful --> K[Stripe checkout.session.completed]
+
+    K --> L[Stripe Webhook]
+
+    L --> M[Verify webhook signature]
+
+    M --> N{Event already processed?}
+
+    N -- Yes --> O[Return 200]
+
+    N -- No --> P[Store Stripe event]
+
+    P --> Q[Lock subscription row]
+
+    Q --> R{Payment status = paid?}
+
+    R -- No --> O
+
+    R -- Yes --> S[Calculate subscription period]
+
+    S --> T[start_date = now]
+
+    T --> U[end_date = start_date + N months]
+
+    U --> V[status = ACTIVE]
+
+    V --> W[Store Payment Intent ID]
+
+    W --> X[Book is_available = True]
+
+    X --> O
+
+    O --> Y[Celery Beat checks expired subscriptions]
+
+    Y --> Z{end_date <= now?}
+
+    Z -- No --> Y
+
+    Z -- Yes --> AA[Celery Worker]
+
+    AA --> AB[status = EXPIRED]
+
+    AB --> AC[Book is_available = False]

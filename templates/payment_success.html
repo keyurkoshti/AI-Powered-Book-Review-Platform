@@ -1,0 +1,89 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Payment Successful</title>
+
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Payment Successful 🎉</h1>
+
+    {% if subscription %}
+
+        <p>
+            Your payment has been successfully submitted.
+        </p>
+
+        <div class="payment-details">
+
+            <p>
+                <strong>Book:</strong>
+                {{ subscription.book.title }}
+            </p>
+
+            <p>
+                <strong>Duration:</strong>
+                {{ subscription.subscription_duration }} month{{ subscription.subscription_duration|pluralize }}
+            </p>
+
+            <p>
+                <strong>Amount:</strong>
+                ₹{{ subscription.price }}
+            </p>
+
+            <p>
+                <strong>Status:</strong>
+                {{ subscription.status|title }}
+            </p>
+
+        </div>
+
+        {% if subscription.status == "active" %}
+
+            <p>
+                Your book is now available.
+            </p>
+
+        {% else %}
+
+            <p>
+                Your payment is being confirmed. Your subscription
+                will become active once payment confirmation is received.
+            </p>
+
+        {% endif %}
+
+    {% else %}
+
+        <p>
+            We could not find the payment associated with this session.
+        </p>
+
+        <p>
+            If you completed the payment, please check your account
+            shortly.
+        </p>
+
+    {% endif %}
+
+    <div class="button-group">
+
+        <a href="{% url 'home' %}">
+            Go to Home
+        </a>
+
+    </div>
+
+</div>
+
+</body>
+</html>

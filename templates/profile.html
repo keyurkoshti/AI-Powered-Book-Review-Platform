@@ -4,26 +4,42 @@
     <head>
         <meta charset="UTF-8">
         <title>Profile</title>
-
         <link rel="stylesheet" href="{% static 'profile.css' %}">
     </head>
     <body>
         <div class="profile-container">
-            
             <h2>User Profile</h2>
+            <p>
+                <strong>Username:</strong>
+                <span id="username">{{ user.user_name }}</span>
+            </p>
+            
+            <p>
+                <strong>Email:</strong>
+                <span id="email">{{ user.email }}</span>
+            </p>
+            
+            <p>
+                <strong>Date Joined:</strong>
+                <span id="date_joined">{{ user.date_joined|date:"m/d/Y" }}</span>
+            </p>
+            
+            <p>
+                <strong>Total Reviews:</strong>
+                <span id="reviews_count">{{ reviews_count }}</span>
+            </p>
 
-                <p><strong>Username:</strong> <span id="username">{{ user.user_name }}</span></p>
+            <p>
+                <strong>Subscription:</strong>
+                {% if has_active_subscription %}
+                    <span>Active</span>
+                {% else %}
+                    <span>No Active Subscription</span>
+                {% endif %}
+            </p>
 
-                <p><strong>Email:</strong> <span id="email">{{ user.email }}</span></p>
-
-                <p><strong>Date Joined:</strong> <span id="date_joined">{{ user.date_joined|date:"m/d/Y" }}</span></p>
-
-                <p><strong>Total Reviews:</strong> <span id="reviews_count">{{ user.reviews_count }}</span></p>
-
-                <hr>
-
-                <a href="{% url 'home' %}" class="back-btn">← Back to Home</a>
-
+            <hr>
+            <a href="{% url 'home' %}" class="back-btn">← Back to Home</a>
         </div>
 
         {% comment %} 

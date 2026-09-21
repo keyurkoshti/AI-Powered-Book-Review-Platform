@@ -1,8 +1,9 @@
 from celery import shared_task
 from django.conf import settings
+from django.utils import timezone
 from django.core.mail import EmailMultiAlternatives
 from smtplib import SMTPException
-from .models import UserProfile
+from .models import UserProfile , BookSubScription
 
 
 @shared_task(autoretry_for=(SMTPException,), retry_backoff=True, retry_backoff_max=300, retry_jitter=True, max_reties=3)
@@ -69,3 +70,16 @@ def send_email_task(user_id):
     email.send(fail_silently=False)
 
     return f"welcome email sent to {user.email}"
+
+
+@shared_task
+def expire_book_subscription():
+    now = timezone.now()
+    subscriptions = (BookSubScription.objects.filter(status = BookSubScription.STATUS_ACTIVE,end_date__lte = now).select_related("book"))
+
+    for subscription in subscriptions:
+        subscription.status = BookSubScription.STATUS_EXPIRED
+        subscription.save(update_fields=['status','updated_at'])
+        subscription.book.is_available = False
+
+        subscription.book.save(update_fields=["is_available"])

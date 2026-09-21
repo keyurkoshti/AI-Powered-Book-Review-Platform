@@ -6,12 +6,28 @@ from .api_views import RegisterApiview, LoginApiview, HomepageApiview, ProfileAP
 urlpatterns = [
     # ---------------- HTML Template Pages (Rendered by views.py) ----------------
     path('', views.home_view, name='index'),
-    path('home/', views.home_view, name='home'),
-    path('login/', views.login_view, name='login'),
+
+    # User Authentication
     path('register/', views.register_view, name='register'),
+    path('login/', views.login_view, name='login'),
+    path("logout/", views.logout_view, name="logout_view"),
+    path('home/', views.home_view, name='home'),
+    
+    # User Profile
     path('profile/', views.profile_view, name='profile'),
+
+    # Add New book (Subscription Required)
     path('book_info/', views.book_info_view, name='book-info'),
+
+    # Write Review to any book
     path('form/', views.review_form_view, name='form_view'),
+    
+    # Stripe Payment
+    path("payment/success/", views.payment_success_view, name="payment_success"),
+    path("payment/cancel/", views.payment_cancel_view, name="payment_cancel"),
+    path("stripe/webhook/", views.stripe_webhook, name="stripe_webhook"),
+
+    
 
     # ---------------- REST API Endpoints (Handled by api_views.py) ----------------
     # authentication
@@ -25,7 +41,7 @@ urlpatterns = [
     path('api/profile', ProfileAPIView.as_view(), name='user-profile'),
 
     # home
-    path('api/home', HomepageApiview.as_view(), name='home'),
+    path('api/home', HomepageApiview.as_view(), name='api-home'),
     
     # books
     path('api/books', BookListAPIView.as_view(), name='books-list'),

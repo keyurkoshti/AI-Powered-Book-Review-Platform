@@ -42,6 +42,11 @@
         <label for="{{ form.description.id_for_label }}">Description</label>
         {{ form.description }}
 
+        <label for="{{ form.subscription_duration.id_for_label }}">
+            Subscription Duration
+        </label>
+        {{ form.subscription_duration }}
+
         <div class="button-group">
             <button type="submit">Save Book</button>
             <a href="{% url 'home' %}" class="back-btn">← Back to Home</a>

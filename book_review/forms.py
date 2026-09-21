@@ -1,6 +1,7 @@
 from django import forms 
 from .models import Book_Review_forms, UserProfile, Book, Category
 from better_profanity import profanity
+from decimal import Decimal
 
 RATING_CHOICES = (
     (1, "⭐"),
@@ -35,16 +36,69 @@ class LoginForm(forms.Form):
     username_or_email = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Username or Email'}))
     password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Password'}))
 
+SUBSCRIPTION_PRICES = {
+    1: Decimal("50.00"),
+    3: Decimal("249.00"),
+    6: Decimal("449.00"),
+    12: Decimal("799.00"),
+}
+
 class BookForm(forms.ModelForm):
-    category_name = forms.CharField(max_length=100, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Fiction, Non-Fiction'}))
+
+    category_name = forms.CharField(
+        max_length=100,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "e.g. Fiction, Non-Fiction",
+            }
+        ),
+    )
+
+    subscription_duration = forms.TypedChoiceField(
+        choices=[(key,f"{key} Month" if key == 1 else f"{key} Months")
+            for key in SUBSCRIPTION_PRICES
+        ],
+        coerce=int,
+        widget=forms.Select(
+            attrs={
+                "class": "form-control",
+            }
+        ),
+        label="Subscription Duration",
+    )
 
     class Meta:
         model = Book
-        fields = ['title', 'author', 'description']
+
+        fields = [
+            "title",
+            "category_name",
+            "author",
+            "description",
+            "subscription_duration",
+        ]
+
         widgets = {
-            'title': forms.TextInput(attrs={'class': 'form-control'}),
-            'author': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            "title": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Enter book title",
+                }
+            ),
+            "author": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Enter author name",
+                }
+            ),
+            "description": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 4,
+                    "placeholder": "Enter book description",
+                }
+            ),
         }
 
 class user_form(forms.ModelForm):

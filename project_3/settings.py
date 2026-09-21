@@ -152,9 +152,6 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "book_review.authentication.CookieJWTAuthentication",
     ),
-},
-
-REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         'login_limit': '5/minute',
         'user': '1000/day',
@@ -172,8 +169,8 @@ SIMPLE_JWT = {
 # -------------------------------Gamil Notification---------------------------------
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.getenv('EMAIL_HOST')
-EMAIL_PORT = os.getenv('EMAIL_PORT')
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 
@@ -185,29 +182,35 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# secret_key
+# ----------------------------stripe secret_key---------------------------------------
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 
-# Celery task (background jobs)
+# ---------------------------Celery task (background jobs)-----------------------------------
 CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
 CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"
 CELERY_TASK_ALWAYS_EAGER = False
 CELERY_TASK_EAGER_PROPAGATES = False 
 
-# 🎯 ADD THESE TWO LINES TO FIX THE DOCKER LAG:
+# ADD THESE TWO LINES TO FIX THE DOCKER LAG:
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
-CELERY_REDIS_BACKEND_USE_SSL = False  # Ensures no SSL overhead locally
-# Keeps connections open instead of closing them
+CELERY_REDIS_BACKEND_USE_SSL = False
 CELERY_BROKER_POOL_LIMIT = 10  
 
-# WARNING: DO NOT USE THIS IN PRODUCTION! IT MAKES PASSWORDS UNSECURE.
-# Use this locally only to confirm if hashing is causing your 1.79s slowdown.
+# Just to Test latency used argon2 hashing 
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.Argon2PasswordHasher', 
     'django.contrib.auth.hashers.PBKDF2PasswordHasher',
     'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
     'django.contrib.auth.hashers.MD5PasswordHasher',
 ]
+
+# -----------------------celery beat scheduled tasks-----------------------------
+CELERY_BEAT_SCHEDULE = {
+    "expire-book-subscriptions": {
+        "task": "book_review.tasks.expire_book_subscription",
+        "schedule": 300.0,
+    },
+}

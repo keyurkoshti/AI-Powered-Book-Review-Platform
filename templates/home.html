@@ -31,7 +31,7 @@
                 <button>Profile</button>
             </a>
 
-            <form action="{% url 'logout_api' %}" method="post" style="display: inline;">
+            <form action="{% url 'logout_view' %}" method="post" style="display: inline;">
                 {% csrf_token %}
                 <button type="submit">Logout</button>
             </form>
@@ -47,7 +47,7 @@
         </div>
     {% endif %}
 
-    <!-- Reviews container -->
+    {% comment %} <!-- Reviews container -->
     <div id="reviews-container">
         {% for review in reviews %}
             <div class="review-card">
@@ -87,7 +87,113 @@
                 <a href="{% url 'form_view' %}" style="display: inline-block; margin-top: 10px; background-color: #007bff; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">+ Add Review</a>
             </div>
         {% endfor %}
+    </div> {% endcomment %}
+    
+    <div id="reviews-container" class="reviews-grid">
+        {% for review in reviews %}
+            <div class="review-card">
+    
+                <h3>
+                    {{ review.book.title }}
+                    <span class="book-author">
+                        by {{ review.book.author }}
+                    </span>
+                </h3>
+    
+                {% if review.book_photo %}
+                    <img
+                        src="{{ review.book_photo.url }}"
+                        alt="{{ review.book.title }}"
+                    >
+                {% endif %}
+    
+                {% if review.rating %}
+                    <p>
+                        <strong>Rating:</strong>
+    
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= review.rating %}
+                                ⭐
+                            {% endif %}
+                        {% endfor %}
+    
+                        ({{ review.rating }}/5)
+                    </p>
+                {% endif %}
+    
+                {% if review.book_url %}
+                    <p>
+                        <strong>Book URL:</strong>
+                        <a
+                            href="{{ review.book_url }}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            {{ review.book_url }}
+                        </a>
+                    </p>
+                {% endif %}
+    
+                <p>
+                    <strong>Review:</strong>
+                    {{ review.book_review }}
+                </p>
+    
+                <p>
+                    <strong>Reviewed By:</strong>
+                    <em>{{ review.user.user_name }}</em>
+                </p>
+    
+            </div>
+    
+        {% empty %}
+    
+            <div class="no-reviews">
+                <h3>No reviews yet</h3>
+                <p>Be the first reader to share a book review!</p>
+    
+                <a href="{% url 'form_view' %}">
+                    + Add Review
+                </a>
+            </div>
+    
+        {% endfor %}
     </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination">
+
+        {% if page_obj.has_previous %}
+            <a href="?page=1{% if search %}&search={{ search|urlencode }}{% endif %}">
+                First
+            </a>
+
+            <a href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search|urlencode }}{% endif %}">
+                Previous
+            </a>
+        {% endif %}
+
+
+        <span>
+            Page {{ page_obj.number }}
+            of
+            {{ page_obj.paginator.num_pages }}
+        </span>
+
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search|urlencode }}{% endif %}">
+                Next
+            </a>
+
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search|urlencode }}{% endif %}">
+                Last
+            </a>
+        {% endif %}
+
+    </div>
+    {% endif %}
 
     {% comment %} 
     <script src="{% static 'book_review_js/auth.js' %}"></script>

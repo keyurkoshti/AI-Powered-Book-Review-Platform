@@ -7,29 +7,15 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 class UserProfileManager(BaseUserManager):
 
     def create_user(self, email, user_name, password, **extra_fields):
-
         if not email:
             raise ValueError("Email is required")
 
         email = self.normalize_email(email)
-
-        user = self.model(
-            email=email,
-            user_name=user_name,
-            **extra_fields
-        )
-
+        user = self.model(email=email,user_name=user_name,**extra_fields)
         user.set_password(password)
         user.save(using=self._db)
 
         return user
-
-    def create_superuser(self, email, user_name, password=None, **extra_fields):
-
-        extra_fields.setdefault('is_staff', False)
-        extra_fields.setdefault('is_superuser', False)
-
-        return self._create_user(email, user_name, password, **extra_fields)
         
     def create_superuser(self, email, user_name, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
@@ -52,7 +38,7 @@ class UserProfile(AbstractUser):
     user_name = models.CharField(max_length=50, null=False, unique=False, db_index=True)
     email = models.EmailField(max_length=254, null=False, unique=True)
     is_active = models.BooleanField(default=True, db_index=True)
-    date_joined = models.DateTimeField(auto_now=True, db_index=True)
+    date_joined = models.DateTimeField(auto_now_add=True, db_index=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['user_name']
@@ -72,13 +58,13 @@ class Category(models.Model):
 
 # ---------------------Book Model--------------------------------
 class Book(models.Model):
-    title = models.CharField(max_length=100)
+    title = models.CharField(max_length=100, unique=True)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name="books")
     author = models.CharField(max_length=100)
     description = models.TextField()
     added_by = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name="book_added")
     is_available = models.BooleanField(default=False)
-    date_added = models.DateTimeField(auto_now=True)
+    date_added = models.DateTimeField(auto_now_add=True)
     def __str__(self):
         return f"{self.title}"
 
@@ -97,12 +83,7 @@ class Book_Review_forms(models.Model):
 
 # -----------------Refresh Token Store Model------------------------------
 class RefreshTokenStore(models.Model):
-    user = models.OneToOneField(
-        UserProfile,
-        on_delete=models.CASCADE,
-        related_name="refresh_token_store",
-        db_index=True
-    )
+    user = models.OneToOneField(UserProfile,on_delete=models.CASCADE,related_name="refresh_token_store",db_index=True)
     refresh_token = models.CharField(max_length=511, db_index=True)
     expires_at = models.DateTimeField(db_index=True)
     created_at = models.DateTimeField(default=timezone.now)
@@ -129,9 +110,7 @@ class BookSubScription(models.Model):
         (STATUS_CANCELLED, 'Cancelled'),
     ]
 
-    subscription_choices = [
-        (1, "1 month"), (3, "3 month"), (6, "6 month"), (12, "12 month"),
-    ]
+    subscription_choices = [(1, "1 month"), (3, "3 month"), (6, "6 month"), (12, "12 month")]
 
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="subscriptions")
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="subscribed")
@@ -181,8 +160,7 @@ class UserAiCredit(models.Model):
     
 # -----------------AI Usage Log Model------------------------------
 class AiUsageLog(models.Model):
-    status_choices = (("success", "Success"), 
-                      ("failed", "Failed"))
+    status_choices = (("success", "Success"),("failed", "Failed"))
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="ai_usage_logs")
     feature = models.CharField(max_length=100)
     model_name = models.CharField(max_length=150)

@@ -52,12 +52,66 @@ body {
 }
 
 /* --------------------------------------------Review Card-------------------------------------- */
-div.review-card {
+/* div.review-card {
     background-color: #ffffff;
     border-radius: 12px;
     padding: 20px;
     margin: 20px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+} */
+
+/* ------------------------------------------
+   Reviews Grid
+------------------------------------------ */
+
+.reviews-grid {
+    display: grid;
+
+    /* Automatically create as many columns as fit */
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(280px, 1fr)
+    );
+
+    gap: 22px;
+
+    padding: 20px;
+}
+
+
+/* ------------------------------------------
+   Review Card
+------------------------------------------ */
+
+.review-card {
+    background-color: #ffffff;
+
+    border-radius: 12px;
+
+    padding: 18px;
+
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+
+    /* Makes cards in a row equal height */
+    display: flex;
+    flex-direction: column;
+
+    /* Prevents strange stretching */
+    min-width: 0;
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+
+/* Card hover effect */
+
+.review-card:hover {
+    transform: translateY(-4px);
+
+    box-shadow:
+        0 12px 25px rgba(0, 0, 0, 0.16);
 }
 
 /* ------------------------------------------Book Title--------------------------------------- */
@@ -98,4 +152,48 @@ hr {
     border: 0;
     border-top: 1px solid #eee;
     margin: 20px 0;
+}
+
+/* ------------------------------------------Pagination------------------------------------------------------ */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin: 30px 0;
+    flex-wrap: wrap;
+}
+
+.pagination-btn {
+    display: inline-block;
+    padding: 9px 16px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border: 1px solid #007bff;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.pagination-btn:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+    transform: translateY(-1px);
+}
+
+.pagination-btn.disabled {
+    background-color: #e9ecef;
+    color: #6c757d;
+    border-color: #dee2e6;
+    cursor: not-allowed;
+}
+
+.pagination-info {
+    padding: 9px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
 }
