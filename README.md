@@ -241,6 +241,7 @@ flowchart TD
 
     AB --> AC[Book is_available = False]
 
+```
 
 ## 1. Transactional Outbox for Welcome Emails
 Added an OutboxEvent to reliably track welcome-email events.
