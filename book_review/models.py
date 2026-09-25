@@ -2,7 +2,9 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils import timezone 
 from django.core.validators import MinValueValidator, MaxValueValidator
+import time
 # Create your models here.
+
 
 class UserProfileManager(BaseUserManager):
 
@@ -14,7 +16,7 @@ class UserProfileManager(BaseUserManager):
         user = self.model(email=email,user_name=user_name,**extra_fields)
         user.set_password(password)
         user.save(using=self._db)
-
+        
         return user
         
     def create_superuser(self, email, user_name, password=None, **extra_fields):
@@ -48,6 +50,18 @@ class UserProfile(AbstractUser):
     def __str__(self):
         return f"{self.user_name} - {self.email}"
     
+
+# --------------------Background Email task-------------------------
+class OutboxEvent(models.Model):
+    EVENT_TYPES = [("WELCOME_EMAIL", "Welcome Email")]
+    
+    event_type = models.CharField(max_length=100,choices=EVENT_TYPES,)
+    payload = models.JSONField()
+    status = models.CharField(max_length=20,default="PENDING")
+    attempts = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
+    
 # ----------------Book Category-----------------
 class Category(models.Model):
     name = models.CharField(max_length=100)
@@ -75,7 +89,7 @@ class Book_Review_forms(models.Model):
     book_photo=models.ImageField(upload_to='book_photos/', null=True, blank=True)
     book_url=models.URLField()
     rating = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(5)], null=True, blank=True)
-    book_review=models.CharField(max_length=500)
+    book_review=models.TextField(max_length=500)
     created_at = models.DateTimeField(default=timezone.now)  
 
     def __str__(self):

@@ -11,7 +11,7 @@ from .authentication import CookieJWTAuthentication
 from django.core.cache import cache
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import UserProfile, Book_Review_forms, Book, Category, RefreshTokenStore, BookSubScription, StripeWebHookEvent, UserAiCredit, AiUsageLog
+from .models import UserProfile, OutboxEvent, Book_Review_forms, Book, Category, RefreshTokenStore, BookSubScription, StripeWebHookEvent, UserAiCredit, AiUsageLog
 from django.conf import settings
 from django.utils import timezone
 from django.db import transaction, IntegrityError
@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 from dateutil import relativedelta
 from .tasks import send_email_task
 from project_3.celery import app as celery_app
+from kombu.exceptions import OperationalError
 from redis import Redis
 from openai import OpenAI
 import stripe
@@ -26,6 +27,10 @@ import threading
 import json
 import time
 import os
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 # golbal redis connection pool
 redis_client = Redis(host='127.0.0.1', port=6379, db=0)
@@ -34,7 +39,7 @@ redis_client = Redis(host='127.0.0.1', port=6379, db=0)
 stripe.api_key = settings.STRIPE_SECRET_KEY
 SUBSCRIPTION_PRICES = {1: 1, 3: 1, 6: 1, 12: 1} 
 
-User = get_user_model()
+# User = get_user_model()
 
 ACCESS_COOKIE_MAX_AGE = int(settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].total_seconds())
 REFRESH_COOKIE_MAX_AGE = int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds())
@@ -74,9 +79,8 @@ class RegisterApiview(generics.CreateAPIView):
         
         with transaction.atomic():
             user = serializer.save()
-            transaction.on_commit(lambda: send_email_task.delay(user.id))
+            OutboxEvent.objects.create(event_type="WELCOME_EMAIL",payload={"user_id": user.id})
         
-        # 4. Return response instantly back to the client
         return Response(
             {"message": "User created successfully"},
             status=status.HTTP_201_CREATED

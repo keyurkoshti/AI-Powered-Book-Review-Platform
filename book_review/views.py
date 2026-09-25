@@ -15,6 +15,7 @@ from .models import Book_Review_forms,Book,Category,UserProfile,BookSubScription
 from .forms import RegisterForm,LoginForm,BookForm,user_form, SUBSCRIPTION_PRICES
 from .api_views import store_refresh_token,ACCESS_COOKIE_MAX_AGE,REFRESH_COOKIE_MAX_AGE
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from book_review.ai_review_service import AIReviewService
 import stripe
 import logging
 
@@ -299,19 +300,52 @@ def book_info_view(request):
 # ----------------------------------Write Review to A Book----------------------------------------
 @login_required(login_url="login")
 def review_form_view(request):
-    if request.method == "POST":
+    if request.method == "GET":
+        form = user_form()
+        return render(request, 'book_review_form.html', {"form":form})
+    
+    action = request.POST.get("action")
+    if action == "improve":
+        form = user_form(request.POST, request.FILES)
+        if not form.is_valid():
+            return render(request,"book_review_form.html",{"form": form})
+        
+        review_text = form.cleaned_data["book_review"]
+        if not review_text.strip():
+            form.add_error("book_review Please write a review before improving it.")
+            return render(request,"book_review_form.html",{"form": form})
+        
+        try:
+            improved_review = AIReviewService.improve_review(review_text)
+
+        except Exception:
+            logger.exception("AI review improvement failed for user_id=%s",request.user.id)
+            form.add_error("book_review","Unable to improve the review right now.")
+            return render(request,"book_review_form.html",{"form": form})
+
+        form.data = form.data.copy()
+        form.data['book_review'] = improved_review
+
+        form = user_form(form.data,request.FILES)
+        messages.success(request,"AI improved your review. Please review it before saving.")
+
+        return render(request,"book_review_form.html",{"form": form})
+    
+    if action == "save":
         form = user_form(request.POST,request.FILES)
 
-        if form.is_valid():
-            review = form.save(commit=False)
-            review.user = request.user
-            review.save()
-            messages.success(request,"Review submitted successfully!")
-            return redirect("home")
+        if not form.is_valid():
+            return render(request,"book_review_form.html",{"form": form})
+        
+        review = form.save(commit=False)
+        review.user = request.user
+        review.save()
 
-    else:
-        form = user_form()
+        messages.success(request,"Review submitted successfully!")
+        return redirect("home")
 
+    form = user_form(request.POST,request.FILES)
+    form.add_error(None,"Invalid form submission.")
     return render(request,"book_review_form.html",{"form": form})
 
 # ---------------------------------Payment Checkout Session----------------------------------------
@@ -580,7 +614,6 @@ def payment_success_view(request):
 # --------------------------Payment Cancel------------------------------------
 @login_required(login_url="login")
 def payment_cancel_view(request):
-
     return render(request,"payment_cancel.html")
 
 # -------------------------Logout User----------------------------------

@@ -14,6 +14,8 @@ from pathlib import Path
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
+from celery.schedules import crontab
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -97,6 +99,7 @@ DATABASES = {
 
         # keep database connections alive
         'CONN_MAX_AGE': 60,
+        'CONN_HEALTH_CHECKS': True,
     }
 }
 
@@ -138,11 +141,9 @@ USE_TZ = True
 
 # --------------------------static folders--------------------------------
 STATIC_URL = 'static/'
-
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
-
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -190,21 +191,31 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 # ---------------------------Celery task (background jobs)-----------------------------------
 CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
-CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"
+CELERY_RESULT_BACKEND = None
+
 CELERY_TASK_ALWAYS_EAGER = False
-CELERY_TASK_EAGER_PROPAGATES = False 
+CELERY_TASK_EAGER_PROPAGATES = False
 
-# ADD THESE TWO LINES TO FIX THE DOCKER LAG:
-CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_TASK_IGNORE_RESULT = True
+
+# CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_REDIS_BACKEND_USE_SSL = False
-CELERY_BROKER_POOL_LIMIT = 10  
 
-# Just to Test latency used argon2 hashing 
+CELERY_BROKER_POOL_LIMIT = 10
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+
+# ------------------------Redis broker-specific settings-------------------------------
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    "socket_connect_timeout": 1,
+    "socket_timeout": 1,
+}
+
+# --------------------------Password Hashing----------------------------------
 PASSWORD_HASHERS = [
-    'django.contrib.auth.hashers.Argon2PasswordHasher', 
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+    'django.contrib.auth.hashers.BCryptPasswordHasher',
     'django.contrib.auth.hashers.PBKDF2PasswordHasher',
     'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
-    'django.contrib.auth.hashers.MD5PasswordHasher',
 ]
 
 # -----------------------celery beat scheduled tasks-----------------------------
@@ -212,5 +223,9 @@ CELERY_BEAT_SCHEDULE = {
     "expire-book-subscriptions": {
         "task": "book_review.tasks.expire_book_subscription",
         "schedule": 300.0,
+    },
+    "process-outbox-every-10-seconds": {
+        "task": "book_review.tasks.process_outbox",
+        "schedule": 10.0,
     },
 }

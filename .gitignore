@@ -10,3 +10,6 @@ venv
 TODO.md
 registerpage_image
 notes.txt
+celerybeat-schedule.bak
+celerybeat-schedule.dat 
+celerybeat-schedule.dir

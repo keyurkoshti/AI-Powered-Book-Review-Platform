@@ -43,10 +43,18 @@
     <br>
     <label for="{{ form.book_review.id_for_label }}">Review:</label>
     {{ form.book_review }}
+    {% if form.book_review.errors %}
+        {% for error in form.book_review.errors %}
+            <p style="color: red;">
+                {{ error }}
+            </p>
+        {% endfor %}
+    {% endif %}
     <br>    
   <div class="button-group">
     <a href="{% url 'home' %}" class="back-btn">← Back to Home</a>
-    <button type="submit">Save</button>
+    <button type="submit" name="action" value="improve">✨ Improve with AI</button>
+    <button type="submit" name="action", value="save">Save</button>
   </div>
   </form>
 

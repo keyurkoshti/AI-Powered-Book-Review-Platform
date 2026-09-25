@@ -240,3 +240,35 @@ flowchart TD
     AA --> AB[status = EXPIRED]
 
     AB --> AC[Book is_available = False]
+
+
+## 1. Transactional Outbox for Welcome Emails
+Added an OutboxEvent to reliably track welcome-email events.
+User creation and outbox event creation happen inside the same database transaction.
+Registration succeeds even if the email service, Redis, or Celery worker is temporarily unavailable.
+Prevents email events from being silently lost.
+
+## 2. Celery Retry & Failure Recovery
+Added Celery-based asynchronous email processing.
+Failed email tasks can be retried with backoff.
+Designed to handle temporary email-service failures and worker interruptions.
+
+## 3. Celery Beat – Outbox Recovery
+Added periodic Celery Beat job to check for pending/failed outbox events.
+Unprocessed welcome-email events can be re-queued automatically after service recovery.
+Provides an additional recovery mechanism beyond normal Celery retries.
+
+## 4. Celery Beat – Subscription Monitoring
+Added a periodic background job to check subscription status.
+Automatically detects subscriptions whose end_date has passed.
+Keeps subscription state synchronized even if an external event/webhook is delayed or missed.
+Configured for periodic execution (e.g. every minute; shorter intervals can be used for development/testing).
+
+## 5. Production Failure Testing
+Tested failure scenarios including:
+Email service unavailable
+Celery worker unavailable
+Redis unavailable
+Background task failure/retry
+Pending Outbox event recovery
+Subscription expiry/reconciliation
