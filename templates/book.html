@@ -42,13 +42,22 @@
         <label for="{{ form.description.id_for_label }}">Description</label>
         {{ form.description }}
 
-        <label for="{{ form.subscription_duration.id_for_label }}">
-            Subscription Duration
-        </label>
-        {{ form.subscription_duration }}
+        {% if not has_active_subscription %}
+            <label for="{{ form.subscription_duration.id_for_label }}">
+                Subscription Duration
+            </label>
+            {{ form.subscription_duration }}
+            <p style="font-size: 0.9rem; color: #555;">
+                Your book will be added after payment is confirmed.
+            </p>
+        {% else %}
+            {{ form.subscription_duration }}
+        {% endif %}
 
         <div class="button-group">
-            <button type="submit">Save Book</button>
+            <button type="submit">
+                {% if has_active_subscription %}Save Book{% else %}Pay &amp; Add Book{% endif %}
+            </button>
             <a href="{% url 'home' %}" class="back-btn">← Back to Home</a>
         </div>
     </form>

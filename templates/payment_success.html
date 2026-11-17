@@ -27,7 +27,13 @@
 
             <p>
                 <strong>Book:</strong>
-                {{ subscription.book.title }}
+                {% if subscription.book %}
+                    {{ subscription.book.title }}
+                {% elif subscription.pending_title %}
+                    {{ subscription.pending_title }}
+                {% else %}
+                    —
+                {% endif %}
             </p>
 
             <p>

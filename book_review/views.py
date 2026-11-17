@@ -4,24 +4,29 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction, IntegrityError
 from dateutil.relativedelta import relativedelta
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django.urls import reverse
 from django.db.models import Q
 from django.utils import timezone
 from django.conf import settings
 from django.core.paginator import Paginator
-from .models import Book_Review_forms,Book,Category,UserProfile,BookSubScription, StripeWebHookEvent
+from .models import Book_Review_forms, OutboxEvent, Book,Category,UserProfile, BookSubScription, StripeWebHookEvent
 from .forms import RegisterForm,LoginForm,BookForm,user_form, SUBSCRIPTION_PRICES
 from .api_views import store_refresh_token,ACCESS_COOKIE_MAX_AGE,REFRESH_COOKIE_MAX_AGE
+from .services.subscription import user_has_active_subscription, create_book_from_form, start_subscription_checkout, activate_subscription_after_payment
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from book_review.ai_review_service import AIReviewService
+import json
 import stripe
 import logging
 
 
 logger = logging.getLogger(__name__)
 
+ACCESS_COOKIE_MAX_AGE = int(settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].total_seconds())
+REFRESH_COOKIE_MAX_AGE = int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds())
 
 def set_jwt_cookies(response, user):
     access = AccessToken.for_user(user)
@@ -52,7 +57,66 @@ def set_jwt_cookies(response, user):
 
     return response
 
+# ----------------------------Register View--------------------------------------
+def register_view(request):
+    if request.user.is_authenticated:
+        return redirect("home")
 
+    if request.method == "POST":
+        form = RegisterForm(request.POST)
+
+        if form.is_valid():
+            with transaction.atomic():
+                user = form.save()
+                OutboxEvent.objects.create(event_type="WELCOME_EMAIL",payload={"user_id": user.id})
+
+            # Django session authentication
+            login(request, user)
+            response = redirect("home")
+            set_jwt_cookies(response, user)
+            messages.success(request,"Welcome To Book Review App.")
+            return response
+
+    else:
+        form = RegisterForm()
+
+    return render(request,"register.html",{"form": form})
+
+# -----------------------------Login View--------------------------------
+def login_view(request):
+    if request.method == "POST":
+        form = LoginForm(request.POST)
+
+        if form.is_valid():
+            username_or_email = form.cleaned_data["username_or_email"]
+            password = form.cleaned_data["password"]
+
+            user = authenticate(request=request,email=username_or_email,password=password)
+
+            if user is None:
+                user_obj = (UserProfile.objects.filter(user_name=username_or_email).first())
+
+                if user_obj:
+                    user = authenticate(
+                        request=request,
+                        email=user_obj.email,
+                        password=password,
+                    )
+
+            if user is not None:
+                login(request, user)
+                response = redirect("home")
+
+                return set_jwt_cookies(response, user)
+            
+            messages.error(request,"Invalid username/email or password.")
+
+    else:
+        form = LoginForm()
+
+    return render(request,"login.html",{"form": form})
+
+# -------------------------------------Home View------------------------------------------
 @login_required(login_url="login")
 def home_view(request):
     reviews = (
@@ -82,277 +146,99 @@ def home_view(request):
 
     return render(request, "home.html", context)
 
-
-def login_view(request):
-    if request.method == "POST":
-        form = LoginForm(request.POST)
-
-        if form.is_valid():
-            username_or_email = form.cleaned_data["username_or_email"]
-            password = form.cleaned_data["password"]
-            user = authenticate(request=request,email=username_or_email,password=password)
-
-            if user is None:
-                user_obj = (UserProfile.objects.filter(user_name=username_or_email).first())
-
-                if user_obj:
-                    user = authenticate(
-                        request=request,
-                        email=user_obj.email,
-                        password=password,
-                    )
-
-            if user is not None:
-                login(request, user)
-                response = redirect("home")
-
-                return set_jwt_cookies(response, user)
-            
-            messages.error(request,"Invalid username/email or password.")
-
-    else:
-        form = LoginForm()
-
-    return render(request,"login.html",{"form": form})
-
-
-
-def register_view(request):
-    if request.user.is_authenticated:
-        return redirect("home")
-
-    if request.method == "POST":
-        form = RegisterForm(request.POST)
-
-        if form.is_valid():
-            user = form.save(commit=False)
-            user.set_password(form.cleaned_data["password"])
-            user.save()
-            messages.success(request,"Registration successful. Please login.")
-
-            return redirect("login")
-
-    else:
-        form = RegisterForm()
-
-    return render(request,"register.html",{"form": form})
-
-
+# -----------------------------------Profile View----------------------------------------
 @login_required(login_url="login")
 def profile_view(request):
 
     user = request.user
     reviews_count = Book_Review_forms.objects.filter(user=user).count()
-    has_active_subscription = BookSubScription.objects.filter(user=user,status=BookSubScription.STATUS_ACTIVE).exists()
+    has_active_subscription = user_has_active_subscription(user)
 
     context = {
         "user": user,
         "reviews_count": reviews_count,
         "has_active_subscription": has_active_subscription,
     }
-    print(context)
+
     return render(request,"profile.html",context)
 
 # ---------------------------------Add New Book(Subscription Required)------------------------------------------
 @login_required(login_url="login")
 def book_info_view(request):
-    if request.method == "GET":
-        form = BookForm()
+    has_active_subscription = user_has_active_subscription(request.user)
 
+    if request.method == "GET":
+        form = BookForm(require_subscription=not has_active_subscription)
         return render(
             request,
             "book.html",
-            {"form": form},
+            {
+                "form": form,
+                "has_active_subscription": has_active_subscription,
+            },
         )
 
-    form = BookForm(request.POST)
+    form = BookForm(
+        request.POST,
+        require_subscription=not has_active_subscription,
+    )
 
     if not form.is_valid():
         return render(
             request,
             "book.html",
-            {"form": form},
-        )
-
-    category_name = form.cleaned_data["category_name"].strip()
-    duration = form.cleaned_data["subscription_duration"]
-    # print("DURATION:", duration)
-    # print("SUBSCRIPTION_PRICES:", SUBSCRIPTION_PRICES)
-    # print("PRICE:", SUBSCRIPTION_PRICES.get(duration))
-
-    price = SUBSCRIPTION_PRICES.get(duration)
-    # print("FINAL PRICE:", price)
-    # print("STRIPE AMOUNT:", int(price * 100))
-
-    if price is None:
-        form.add_error(
-            "subscription_duration",
-            "Please select a valid subscription duration.",
-        )
-
-        return render(
-            request,
-            "book.html",
-            {"form": form},
-        )
-
-    try:
-
-        with transaction.atomic():
-            category, _ = Category.objects.get_or_create(
-                name=category_name
-            )
-
-            has_active_subscription = (
-                BookSubScription.objects
-                .filter(
-                    user=request.user,
-                    status=BookSubScription.STATUS_ACTIVE,
-                    end_date__gt=timezone.now(),
-                )
-                .exists()
-            )
-
-            book = form.save(commit=False)
-            book.category = category
-            book.added_by = request.user
-
-            if has_active_subscription:
-                book.is_available = True
-                book.save()
-                messages.success(request,"Book added successfully!")
-                return redirect("form_view")
-
-            book.is_available = False
-            book.save()
-
-            subscription = BookSubScription.objects.create(
-                user=request.user,
-                book=book,
-                subscription_duration=duration,
-                price=price,
-                status=BookSubScription.STATUS_PENDING,
-            )
-
-    except IntegrityError:
-
-        messages.error(request,"Unable to add this book. Please try again.")
-        return render(request,"book.html",{"form": form})
-
-    try:
-
-        session = stripe.checkout.Session.create(
-            mode="payment",
-            payment_method_types=["card"],
-            line_items=[
-                {
-                    "price_data": {
-                        "currency": "inr",
-                        "unit_amount": int(price * 100),
-                        "product_data": {
-                            "name": f"Subscription: {book.title}",
-                        },
-                    },
-                    "quantity": 1,
-                }
-            ],
-            metadata={
-                "subscription_id": str(subscription.id),
-                "book_id": str(book.id),
-                "user_id": str(request.user.id),
+            {
+                "form": form,
+                "has_active_subscription": has_active_subscription,
             },
-            success_url=(
-                request.build_absolute_uri(
-                    reverse("payment_success")
-                )
-                + "?session_id={CHECKOUT_SESSION_ID}"
-            ),
-            cancel_url=request.build_absolute_uri(
-                reverse("payment_cancel")
-            ),
-            idempotency_key=f"subscription-{subscription.id}",
         )
 
-    except stripe.error.StripeError as e:
-
-        # print("STRIPE ERROR:", repr(e))
-
-        subscription.status = BookSubScription.STATUS_FAILED
-        subscription.save(update_fields=["status"])
-        messages.error(request,f"Stripe error: {e}")
-
-        return redirect("form_view")
-
-    except Exception as e:
-
-        # print("GENERAL ERROR:", repr(e))
-
-        subscription.status = BookSubScription.STATUS_FAILED
-        subscription.save(update_fields=["status"])
-        messages.error(request,f"Payment error: {e}")
-
-        return redirect("form_view")
-    
-    subscription.stripe_checkout_session_id = session.id
-    subscription.save(update_fields=["stripe_checkout_session_id"])
-    return redirect(session.url)
-
-# ----------------------------------Write Review to A Book----------------------------------------
-@login_required(login_url="login")
-def review_form_view(request):
-    if request.method == "GET":
-        form = user_form()
-        return render(request, 'book_review_form.html', {"form":form})
-    
-    action = request.POST.get("action")
-    if action == "improve":
-        form = user_form(request.POST, request.FILES)
-        if not form.is_valid():
-            return render(request,"book_review_form.html",{"form": form})
-        
-        review_text = form.cleaned_data["book_review"]
-        if not review_text.strip():
-            form.add_error("book_review Please write a review before improving it.")
-            return render(request,"book_review_form.html",{"form": form})
-        
+    if has_active_subscription:
         try:
-            improved_review = AIReviewService.improve_review(review_text)
+            with transaction.atomic():
+                create_book_from_form(request.user, form.cleaned_data)
 
-        except Exception:
-            logger.exception("AI review improvement failed for user_id=%s",request.user.id)
-            form.add_error("book_review","Unable to improve the review right now.")
-            return render(request,"book_review_form.html",{"form": form})
+            messages.success(request, "Book added successfully!")
+            return redirect("home")
 
-        form.data = form.data.copy()
-        form.data['book_review'] = improved_review
+        except IntegrityError:
+            logger.exception("Failed to create book for user %s", request.user.id)
+            messages.error(request, "Unable to add this book. Please try again.")
+            return render(
+                request,
+                "book.html",
+                {
+                    "form": form,
+                    "has_active_subscription": has_active_subscription,
+                },
+            )
 
-        form = user_form(form.data,request.FILES)
-        messages.success(request,"AI improved your review. Please review it before saving.")
+    # No active subscription: stash book draft on pending subscription, then pay.
+    # Book row is created only after Stripe payment confirmation.
+    duration = form.cleaned_data["subscription_duration"]
+    try:
+        checkout_url = start_subscription_checkout(
+            request,
+            request.user,
+            duration,
+            draft_fields=form.cleaned_data,
+        )
+    except stripe.error.StripeError as e:
+        logger.exception("Stripe checkout failed for user %s", request.user.id)
+        messages.error(request, f"Stripe error: {e}")
+        return redirect("book-info")
+    except Exception as e:
+        logger.exception("Payment checkout failed for user %s", request.user.id)
+        messages.error(request, f"Payment error: {e}")
+        return redirect("book-info")
 
-        return render(request,"book_review_form.html",{"form": form})
-    
-    if action == "save":
-        form = user_form(request.POST,request.FILES)
-
-        if not form.is_valid():
-            return render(request,"book_review_form.html",{"form": form})
-        
-        review = form.save(commit=False)
-        review.user = request.user
-        review.save()
-
-        messages.success(request,"Review submitted successfully!")
-        return redirect("home")
-
-    form = user_form(request.POST,request.FILES)
-    form.add_error(None,"Invalid form submission.")
-    return render(request,"book_review_form.html",{"form": form})
+    return redirect(checkout_url)
 
 # ---------------------------------Payment Checkout Session----------------------------------------
 @login_required(login_url="login")
 def create_checkout_session_view(request, book_id):
     if request.method != "POST":
-        return redirect("book_info")
+        return redirect("book-info")
 
     duration = request.POST.get("subscription_duration")
 
@@ -365,10 +251,10 @@ def create_checkout_session_view(request, book_id):
     if duration not in SUBSCRIPTION_PRICES:
         messages.error(request,"Invalid subscription duration.")
         return redirect("book_info")
-
+    
     try:
         with transaction.atomic():
-            book = (Book.objects.select_for_update().get(id=book_id))
+            book = Book.objects.select_for_update().get(id=book_id)
             already_taken = (BookSubScription.objects.filter(
                     book=book,
                     status__in=[
@@ -453,7 +339,6 @@ def create_checkout_session_view(request, book_id):
     return redirect(session.url)
 
 # -----------------------------stripe webhook-------------------------------
-
 @csrf_exempt
 def stripe_webhook(request):
     if request.method != "POST":
@@ -512,8 +397,6 @@ def stripe_webhook(request):
                         event_id,
                     )
                     return HttpResponse(status=400)
-                
-                # print(f"subcription id :- {subscription_id}")
 
                 subscription = (
                     BookSubScription.objects
@@ -522,8 +405,10 @@ def stripe_webhook(request):
                     .get(id=subscription_id)
                 )
 
-                if subscription.status == (BookSubScription.STATUS_ACTIVE):
-                    logger.info("Subscription %s already active.",subscription.id)
+                if subscription.status == BookSubScription.STATUS_ACTIVE:
+                    # Still create book if webhook retried after activation
+                    # but draft book was not created yet.
+                    activate_subscription_after_payment(subscription)
                     return HttpResponse(status=200)
 
                 payment_status = session.payment_status
@@ -537,38 +422,20 @@ def stripe_webhook(request):
                     )
                     return HttpResponse(status=200)
 
-                subscription.status = (BookSubScription.STATUS_ACTIVE)
-                start_date = timezone.now()
-                end_date = start_date + relativedelta(months=subscription.subscription_duration)
-
-                subscription.status = BookSubScription.STATUS_ACTIVE
-                subscription.start_date = subscription.start_date
-                subscription.end_date = end_date
-                payment_intent_id = session.payment_intent
-
-                if payment_intent_id:
-                    subscription.stripe_payment_intent_id = (payment_intent_id)
-
-                subscription.save(
-                    update_fields=[
-                        "status",
-                        "start_date",
-                        "stripe_payment_intent_id",
-                        "updated_at",
-                    ]
+                activate_subscription_after_payment(
+                    subscription,
+                    payment_intent_id=session.payment_intent,
                 )
 
-                book = subscription.book
-                book.is_available = True
-
-                book.save(update_fields=["is_available"])
-
-                logger.info(
-                    "Subscription %s activated successfully. "
-                    "Book %s is now available.",
-                    subscription.id,
-                    book.id,
-                )
+            elif event_type == "checkout.session.expired":
+                session = event["data"]["object"]
+                metadata = session.metadata.to_dict() if session.metadata else {}
+                subscription_id = metadata.get("subscription_id")
+                if subscription_id:
+                    BookSubScription.objects.filter(
+                        id=subscription_id,
+                        status=BookSubScription.STATUS_PENDING,
+                    ).update(status=BookSubScription.STATUS_CANCELLED)
 
             else:
                 logger.info("Ignoring Stripe event type: %s",event_type)
@@ -592,6 +459,58 @@ def stripe_webhook(request):
 
     return HttpResponse(status=200)
 
+
+# ----------------------------------Write Review to A Book----------------------------------------
+@login_required(login_url="login")
+def review_form_view(request):
+    if request.method == "GET":
+        form = user_form()
+        return render(request, 'book_review_form.html', {"form":form})
+    
+    action = request.POST.get("action")
+    if action == "improve":
+        form = user_form(request.POST, request.FILES)
+        if not form.is_valid():
+            return render(request,"book_review_form.html",{"form": form})
+        
+        review_text = form.cleaned_data["book_review"]
+        if not review_text.strip():
+            form.add_error("book_review Please write a review before improving it.")
+            return render(request,"book_review_form.html",{"form": form})
+        
+        try:
+            improved_review = AIReviewService.improve_review(review_text)
+
+        except Exception:
+            logger.exception("AI review improvement failed for user_id=%s",request.user.id)
+            form.add_error("book_review","Unable to improve the review right now.")
+            return render(request,"book_review_form.html",{"form": form})
+
+        form.data = form.data.copy()
+        form.data['book_review'] = improved_review
+
+        form = user_form(form.data,request.FILES)
+        messages.success(request,"AI improved your review. Please review it before saving.")
+
+        return render(request,"book_review_form.html",{"form": form})
+    
+    if action == "save":
+        form = user_form(request.POST,request.FILES)
+
+        if not form.is_valid():
+            return render(request,"book_review_form.html",{"form": form})
+        
+        review = form.save(commit=False)
+        review.user = request.user
+        review.save()
+
+        messages.success(request,"Review submitted successfully!")
+        return redirect("home")
+
+    form = user_form(request.POST,request.FILES)
+    form.add_error(None,"Invalid form submission.")
+    return render(request,"book_review_form.html",{"form": form})
+
 # -----------------------------Payment Success-----------------------------------
 @login_required(login_url="login")
 def payment_success_view(request):
@@ -599,13 +518,40 @@ def payment_success_view(request):
     subscription = None
 
     if session_id:
-        subscription = (BookSubScription.objects.filter(
+        subscription = (
+            BookSubScription.objects.filter(
                 stripe_checkout_session_id=session_id,
                 user=request.user,
-            ).select_related("book").first()
+            )
+            .select_related("book")
+            .first()
         )
 
-    return render(request,"payment_success.html",
+        # Reconcile if webhook is delayed: verify Stripe session and activate.
+        if subscription and subscription.status == BookSubScription.STATUS_PENDING:
+            try:
+                session = stripe.checkout.Session.retrieve(session_id)
+                if session.payment_status == "paid":
+                    with transaction.atomic():
+                        subscription = (
+                            BookSubScription.objects.select_for_update()
+                            .select_related("book")
+                            .get(id=subscription.id)
+                        )
+                        activate_subscription_after_payment(
+                            subscription,
+                            payment_intent_id=session.payment_intent,
+                        )
+                        subscription.refresh_from_db()
+            except Exception:
+                logger.exception(
+                    "Failed to reconcile payment for session %s",
+                    session_id,
+                )
+
+    return render(
+        request,
+        "payment_success.html",
         {
             "subscription": subscription,
         },
@@ -614,7 +560,11 @@ def payment_success_view(request):
 # --------------------------Payment Cancel------------------------------------
 @login_required(login_url="login")
 def payment_cancel_view(request):
-    return render(request,"payment_cancel.html")
+    BookSubScription.objects.filter(
+        user=request.user,
+        status=BookSubScription.STATUS_PENDING,
+    ).update(status=BookSubScription.STATUS_CANCELLED)
+    return render(request, "payment_cancel.html")
 
 # -------------------------Logout User----------------------------------
 def logout_view(request):

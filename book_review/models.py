@@ -11,6 +11,8 @@ class UserProfileManager(BaseUserManager):
     def create_user(self, email, user_name, password, **extra_fields):
         if not email:
             raise ValueError("Email is required")
+        if not password:
+            raise ValueError("Password is required")
 
         email = self.normalize_email(email)
         user = self.model(email=email,user_name=user_name,**extra_fields)
@@ -127,7 +129,12 @@ class BookSubScription(models.Model):
     subscription_choices = [(1, "1 month"), (3, "3 month"), (6, "6 month"), (12, "12 month")]
 
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="subscriptions")
-    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="subscribed")
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, null=True, blank=True, related_name="subscribed")
+    pending_title = models.CharField(max_length=255,blank=True)
+    pending_author = models.CharField(max_length=255,blank=True)
+    pending_category_name = models.CharField(max_length=255,blank=True)
+    pending_description = models.TextField(blank=True)
+    pending_book_url = models.URLField(blank=True)
     subscription_duration = models.PositiveIntegerField(choices=subscription_choices)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=10, default='inr')
@@ -155,35 +162,13 @@ class BookSubScription(models.Model):
 class StripeWebHookEvent(models.Model):
     event_id = models.CharField(max_length=255, unique=True)
     event_type = models.CharField(max_length=100)
+    processed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.event_id} - {self.created_at}"
 
 # -----------------User AI Credit Model------------------------------
-class UserAiCredit(models.Model):
-    user = models.OneToOneField(UserProfile, on_delete=models.CASCADE, related_name="ai_credit")
-    total_credits = models.PositiveBigIntegerField(default=10)
-    remaining_credits = models.PositiveBigIntegerField(default=10)
-    total_used_credits = models.PositiveBigIntegerField(default=0)
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return f"{self.user.email} - {self.remaining_credits} credits"
     
-# -----------------AI Usage Log Model------------------------------
-class AiUsageLog(models.Model):
-    status_choices = (("success", "Success"),("failed", "Failed"))
-    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="ai_usage_logs")
-    feature = models.CharField(max_length=100)
-    model_name = models.CharField(max_length=150)
-    credits_used = models.PositiveIntegerField(default=1)
-    input_tokens = models.PositiveIntegerField(default=0)
-    output_tokens = models.PositiveIntegerField(default=0)
-    status = models.CharField(max_length=20,choices=status_choices)
-    response_time_ms = models.PositiveIntegerField(null=True, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
-
-    def __str__(self):
-        return f"{self.user.email} - {self.feature}"
+# -----------------AI Usage Log Model------------------------------

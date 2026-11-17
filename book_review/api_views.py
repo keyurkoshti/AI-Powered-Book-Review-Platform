@@ -4,14 +4,15 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.pagination import PageNumberPagination
-from .serializers import RegisterSerializer, LoginSerializer, HomepageSerializer, ProfileSerializer, CreateReviewSerializer, AddBookSerializer, BookListSerializer, CategorySerializer, ReviewImproveSerializer
+from .serializers import RegisterSerializer, LoginSerializer, HomepageSerializer, ProfileSerializer, CreateReviewSerializer, AddBookSerializer, BookListSerializer, CategorySerializer, ReviewImproveSerializer, SearchSerializer
 from django.contrib.auth import authenticate, logout, get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from .authentication import CookieJWTAuthentication
 from django.core.cache import cache
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import UserProfile, OutboxEvent, Book_Review_forms, Book, Category, RefreshTokenStore, BookSubScription, StripeWebHookEvent, UserAiCredit, AiUsageLog
+from .models import UserProfile, OutboxEvent, Book_Review_forms, Book, Category, RefreshTokenStore, BookSubScription, StripeWebHookEvent
+from .services.subscription import user_has_active_subscription
 from django.conf import settings
 from django.utils import timezone
 from django.db import transaction, IntegrityError
@@ -81,12 +82,37 @@ class RegisterApiview(generics.CreateAPIView):
             user = serializer.save()
             OutboxEvent.objects.create(event_type="WELCOME_EMAIL",payload={"user_id": user.id})
         
-        return Response(
-            {"message": "User created successfully"},
-            status=status.HTTP_201_CREATED
+        response = Response(
+            {
+                "message": "User Registered Successfully.",
+                "user": {
+                    "id": user.id,
+                    "user_name": user.user_name,
+                    "email": user.email,
+                }
+            },
+            status=status.HTTP_200_OK
         )
 
+        response.set_cookie(
+            key='access_token',
+            value=access_token,
+            httponly=True,
+            secure=False,
+            samesite='Lax',
+            max_age=ACCESS_COOKIE_MAX_AGE
+        )
+        response.set_cookie(
+            key='refresh_token',
+            value=refresh_token,
+            httponly=True,
+            secure=False,
+            samesite='Lax',
+            max_age=REFRESH_COOKIE_MAX_AGE
+        )
 
+        return response
+    
 # ------------------------Login Api (sets HttpOnly cookies)--------------------------------
 class LoginRateLimit(AnonRateThrottle):
     scope = "login_limit"
@@ -99,6 +125,7 @@ class LoginApiview(APIView):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data
+        print(user)
 
         access = AccessToken.for_user(user)
         refresh = RefreshToken.for_user(user)
@@ -154,18 +181,8 @@ class HomepageApiview(generics.ListAPIView):
     pagination_class = HomePagePagination
     
     def get_queryset(self):
-        queryset = Book_Review_forms.objects.select_related("user", "book").order_by("-id")
-        search = self.request.query_params.get("search")
-
-        if search:
-            queryset = queryset.filter(
-                Q(book__title__icontains=search) | 
-                Q(book__category__name__icontains=search) |
-                Q(book__author__icontains=search)
-            )
-
-        return queryset
-
+        return Book_Review_forms.objects.select_related("user", "book").order_by("-created_at")
+        
 
 # ------------------------Profile-page Api--------------------------
 class ProfileAPIView(generics.RetrieveAPIView):
@@ -303,18 +320,50 @@ class AddBookAPIView(generics.CreateAPIView):
     authentication_classes = [CookieJWTAuthentication]
     serializer_class = AddBookSerializer
 
-    def perform_create(self, serializer):
-        serializer.save(added_by=self.request.user)
-
     def create(self, request, *args, **kwargs):
+        
+
+        if not user_has_active_subscription(request.user):
+            return Response(
+                {
+                    "error": "Active subscription required. Complete payment before adding a book.",
+                },
+                status=status.HTTP_402_PAYMENT_REQUIRED,
+            )
+
         response = super().create(request, *args, **kwargs)
         return Response(
             {
                 "message": "Book added successfully.",
-                "book": response.data
+                "book": response.data,
             },
-            status=status.HTTP_201_CREATED
+            status=status.HTTP_201_CREATED,
         )
+
+    def perform_create(self, serializer):
+        book = serializer.save(added_by=self.request.user, is_available=True)
+        return book
+    
+
+# --------------------------Search API--------------------------------
+class SearchAPIView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [CookieJWTAuthentication]
+    serializer_class = SearchSerializer
+
+    def get_queryset(self):
+        queryset = UserProfile.objects.all()
+        print(queryset)
+        search_query = self.request.query_params.get("q", "").strip()
+
+        if not search_query:
+            return queryset.none()
+
+        return queryset.filter(
+            Q(user_name__icontains=search_query)
+            # | Q(category__icontains=search_query)
+            | Q(email__icontains=search_query)
+        ).distinct()
 
 # -----------------------Stripe Integration----------------------------
 class CreateCheckoutSessionAPIView(APIView):
@@ -439,18 +488,13 @@ class StripeWebhookAPIView(APIView):
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                         )
 
-                    if subscription.status == BookSubScription.STATUS_PENDING:
-                        now = timezone.now()
-                        subscription.status = BookSubScription.STATUS_ACTIVE
-                        subscription.stripe_payment_intent_id = session.get("payment_intent")
-                        subscription.start_date = now
-                        subscription.end_date = now + relativedelta(months=subscription.subscription_duration)
-                        subscription.save()
+                    if session.get("payment_status") == "paid":
+                        from .services.subscription import activate_subscription_after_payment
 
-                        book = Book.objects.select_for_update().get(id=subscription.book_id)
-
-                        book.is_available = True
-                        book.save(update_fields=["is_available"])
+                        activate_subscription_after_payment(
+                            subscription,
+                            payment_intent_id=session.get("payment_intent"),
+                        )
 
                 elif event_type == "checkout.session.expired":
                     session = event["data"]["object"]
@@ -505,30 +549,6 @@ class AiReviewAPIView(generics.GenericAPIView):
         review_text = serializer.validated_data["review_text"]
 
         try:
-            with transaction.atomic():
-                credit = UserAiCredit.objects.select_for_update().get(user=request.user)
-                if credit.remaining_credits <= 0:
-                    return Response(
-                        {
-                            "success": False,
-                            "detail": "AI credits exhausted.",
-                            "remaining_credits": 0,
-                        },
-                        status=status.HTTP_429_TOO_MANY_REQUESTS,
-                    )
-                credit.remaining_credits -= 1
-                credit.total_used_credits += 1
-                credit.save(update_fields=["remaining_credits", "total_used_credits", "updated_at"])
-                remaining_credits = credit.remaining_credits
-        except UserAiCredit.DoesNotExist:
-            return Response(
-                {"success": False, 
-                 "detail": "AI credit account not found"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-        start_time = time.monotonic()
-        try:
             api_key = os.getenv("OPENAI_API_KEY")
             if not api_key:
                 raise ValueError("OPENAI_API_KEY is not configured")
@@ -560,19 +580,7 @@ class AiReviewAPIView(generics.GenericAPIView):
                 max_tokens=300,
             )
 
-            response_time_ms = int((time.monotonic() - start_time) * 1000)
             improved_review = response.choices[0].message.content.strip()
-
-            AiUsageLog.objects.create(
-                user=request.user,
-                feature=FEATURE_REVIEW_IMPROVEMENT,
-                model_name=AI_MODEL_NAME,
-                credits_used=1,
-                input_tokens=getattr(response.usage, "prompt_tokens", 0) if response.usage else 0,
-                output_tokens=getattr(response.usage, "completion_tokens", 0) if response.usage else 0,
-                status="success",
-                response_time_ms=response_time_ms,
-            )
 
             return Response(
                 {
@@ -585,27 +593,6 @@ class AiReviewAPIView(generics.GenericAPIView):
             )
 
         except Exception as e:
-            response_time_ms = int((time.monotonic() - start_time) * 1000)
-
-            try:
-                with transaction.atomic():
-                    credit = UserAiCredit.objects.select_for_update().get(user=request.user)
-                    credit.remaining_credits += 1
-                    credit.total_used_credits -= 1
-                    credit.save(update_fields=["remaining_credits", "total_used_credits", "updated_at"])
-                    remaining_credits = credit.remaining_credits
-
-                AiUsageLog.objects.create(
-                    user=request.user,
-                    feature=FEATURE_REVIEW_IMPROVEMENT,
-                    model_name=AI_MODEL_NAME,
-                    credits_used=0,
-                    status="failed",
-                    response_time_ms=response_time_ms,
-                )
-            except UserAiCredit.DoesNotExist:
-                remaining_credits = None
-
             return Response(
                 {
                     "success": False,

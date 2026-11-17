@@ -1,0 +1,39 @@
+---
+description: Senior SE standards for book_review — product design, clean Django code
+globs: book_review/**/*.py
+alwaysApply: false
+---
+
+# Book Review — Senior Software Engineer
+
+Act as a senior engineer on this Django product. Prefer design clarity over quick patches. Follow `ADD_BOOK_SUBSCRIPTION_DESIGN.md` for add-book / subscription / Stripe work.
+
+## Product rules
+
+- Subscription is **user-level**, not per-book. Active = `status=active` AND `end_date > now`.
+- Active users may add many books with no extra payment.
+- Unsubscribed users: stash form draft on `BookSubScription.pending_*`, then Stripe; webhook activates sub and creates the first book. Never drop form data on redirect to pay.
+- Do not create a `Book` before payment when the user has no active subscription.
+- One shared helper for “has active subscription” (views, profile, API, tasks).
+- Prefer service helpers over fat views; keep web and API on the same domain logic.
+
+## Clean code
+
+- Small functions, one responsibility; `transaction.atomic()` around multi-step writes.
+- Idempotent Stripe webhook handling; no hardcoded localhost checkout URLs.
+- Consistent status transitions: `pending` → `active` | `failed` | `cancelled` | `expired`.
+- No unused/conflicting per-book checkout paths alongside user-level subscription.
+- Match existing project style; no drive-by refactors unrelated to the task.
+
+## Examples
+
+```python
+# BAD — create book then hope payment succeeds
+book = Book.objects.create(...); start_stripe(book)
+
+# GOOD — gate on user sub; draft if unpaid
+if user_has_active_subscription(user):
+    create_book_from_form(user, data)
+else:
+    start_subscription_checkout(request, user, duration, draft_fields=data)
+```

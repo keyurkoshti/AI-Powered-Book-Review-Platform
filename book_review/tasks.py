@@ -81,10 +81,14 @@ def process_outbox():
 @shared_task
 def expire_book_subscription():
     now = timezone.now()
-    subscriptions = (BookSubScription.objects.filter(status = BookSubScription.STATUS_ACTIVE,end_date__lte = now).select_related("book"))
+    subscriptions = (
+        BookSubScription.objects.filter(
+            status=BookSubScription.STATUS_ACTIVE,
+            end_date__lte=now,
+        ).select_related("book")
+    )
 
     for subscription in subscriptions:
+        # User-level subscription: expire access only; keep existing books listed.
         subscription.status = BookSubScription.STATUS_EXPIRED
-        subscription.save(update_fields=['status','updated_at'])
-        subscription.book.is_available = False
-        subscription.book.save(update_fields=["is_available"])
+        subscription.save(update_fields=["status", "updated_at"])

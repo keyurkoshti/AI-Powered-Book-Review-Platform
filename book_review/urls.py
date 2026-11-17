@@ -1,7 +1,7 @@
 from django.urls import path 
 from rest_framework_simplejwt.views import TokenRefreshView
 from book_review import views
-from .api_views import RegisterApiview, LoginApiview, HomepageApiview, ProfileAPIView, LogoutAPIView, CookieTokenRefreshView, CategoryListAPIView, BookListAPIView, CreateReviewAPIView, AddBookAPIView, CreateCheckoutSessionAPIView, StripeWebhookAPIView, AiReviewAPIView
+from .api_views import RegisterApiview, LoginApiview, HomepageApiview, ProfileAPIView, LogoutAPIView, CookieTokenRefreshView, CategoryListAPIView, BookListAPIView, CreateReviewAPIView, AddBookAPIView, CreateCheckoutSessionAPIView, StripeWebhookAPIView, AiReviewAPIView, SearchAPIView
 
 urlpatterns = [
     # ---------------- HTML Template Pages (Rendered by views.py) ----------------
@@ -25,7 +25,7 @@ urlpatterns = [
     # Stripe Payment
     path("payment/success/", views.payment_success_view, name="payment_success"),
     path("payment/cancel/", views.payment_cancel_view, name="payment_cancel"),
-    path("stripe/webhook/", views.stripe_webhook, name="stripe_webhook"),
+    path("stripe/webhook", views.stripe_webhook, name="stripe_webhook"),
 
     
 
@@ -49,6 +49,9 @@ urlpatterns = [
 
     # categories
     path('api/categories', CategoryListAPIView.as_view(), name='books-categories'),
+
+    # search
+    path("api/search/", SearchAPIView.as_view(), name="book-search"),
     
     # reviews
     path('api/reviews', CreateReviewAPIView.as_view(), name='book-review'),

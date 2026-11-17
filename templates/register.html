@@ -1,286 +1,106 @@
-{% comment %} {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register</title>
-    <link rel="stylesheet" href="{% static 'register.css' %}">
-</head>
-<body>
-    <div class="register-container">
-        <form id='registerform'>
-            <h2>Register User</h2>
-            {% csrf_token %}
-            <input type="text" id="username" placeholder="Username" required><br>
-            <input type="email" id="email" placeholder="Email" required><br>
-            <input type="password" id="password1" placeholder="Password" required><br>
-            <input type="password" id="password2" placeholder="Confirm Password" required><br>
-            <div class="button-group">
-                <button type="submit">Register</button>
-                <a href="{% url 'login' %}" class="login-button">Login</a>
-            </div>
-        </form>
-
-        <p id='error' style='color: red'></p>
-    </div>
-
-    <script src = "{% static 'book_review_js/register.js' %}"></script>
-    
-</body>
-</html> {% endcomment %}
-
 {% load static %}
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>BookReview - Register</title>
+
     <link rel="stylesheet" href="{% static 'register.css' %}">
 </head>
 
 <body>
 
-    <div class="register-page">
+<div class="register-page">
 
-        <!-- =====================================
-             LEFT SIDE - BOOK REVIEW
-        ====================================== -->
+    <div class="register-container">
 
-        <section class="book-section">
+        <div class="form-header">
+            <h1>BookReview</h1>
+            <h2>Create your account</h2>
+            <p>Join our community of book lovers.</p>
+        </div>
 
-            <div class="book-overlay"></div>
+        <form method="post">
 
-            <div class="book-content">
+            {% csrf_token %}
 
-                <!-- Logo -->
-                <div class="logo">
-                    <div class="logo-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 6.5c-1.6-1.2-3.7-1.7-6-1.7v13c2.3 0 4.4.5 6 1.7 1.6-1.2 3.7-1.7 6-1.7v-13c-2.3 0-4.4.5-6 1.7Z"/>
-                            <path d="M12 6.5v13"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <h1>BookReview</h1>
-                        <p>Discover. Read. Review.</p>
-                    </div>
-                </div>
+            <!-- Username -->
+            <div class="input-wrapper">
 
+                <label for="{{ form.user_name.id_for_label }}">
+                    Username
+                </label>
 
-                <!-- Main content -->
-                <div class="hero-content">
+                {{ form.user_name }}
 
-                    <span class="small-title">YOUR NEXT GREAT READ</span>
-
-                    <h2>
-                        Every book has
-                        <br>
-                        a story worth sharing.
-                    </h2>
-
-                    <p>
-                        Discover amazing books, share your honest
-                        thoughts, and help other readers find their
-                        next favorite book.
-                    </p>
-
-                    <!-- Features -->
-                    <div class="features">
-
-                        <div class="feature">
-                            <span class="feature-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="11" cy="11" r="7"/>
-                                    <path d="m21 21-4.3-4.3"/>
-                                </svg>
-                            </span>
-                            <div>
-                                <strong>Discover</strong>
-                                <span>Find great books</span>
-                            </div>
-                        </div>
-
-                        <div class="feature">
-                            <span class="feature-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="m12 3 2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.2-5.4 3.2 1.3-6-4.6-4.1 6.1-.6Z"/>
-                                </svg>
-                            </span>
-                            <div>
-                                <strong>Review</strong>
-                                <span>Share your opinion</span>
-                            </div>
-                        </div>
-
-                        <div class="feature">
-                            <span class="feature-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M12 21s-7.5-4.6-10-9.1C.4 8.6 2 5 5.5 5c2 0 3.4 1.1 4.1 2.2L12 8.9l2.4-1.7C15.1 6.1 16.5 5 18.5 5 22 5 23.6 8.6 22 11.9 19.5 16.4 12 21 12 21Z"/>
-                                </svg>
-                            </span>
-                            <div>
-                                <strong>Inspire</strong>
-                                <span>Help other readers</span>
-                            </div>
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <div class="copyright">
-                    Read more. Review honestly. Inspire others.
-                </div>
+                {% for error in form.user_name.errors %}
+                    <p class="error-message">{{ error }}</p>
+                {% endfor %}
 
             </div>
 
-        </section>
 
+            <!-- Email -->
+            <div class="input-wrapper">
 
-        <!-- =====================================
-             RIGHT SIDE - REGISTER
-        ====================================== -->
+                <label for="{{ form.email.id_for_label }}">
+                    Email
+                </label>
 
-        <section class="form-section">
+                {{ form.email }}
 
-            <div class="register-container">
-
-                <!-- Mobile logo -->
-                <div class="mobile-logo">
-                    <div class="logo-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 6.5c-1.6-1.2-3.7-1.7-6-1.7v13c2.3 0 4.4.5 6 1.7 1.6-1.2 3.7-1.7 6-1.7v-13c-2.3 0-4.4.5-6 1.7Z"/>
-                            <path d="M12 6.5v13"/>
-                        </svg>
-                    </div>
-                    <span>BookReview</span>
-                </div>
-
-                <!-- Form heading -->
-                <div class="form-header">
-                    <h2>Create your account</h2>
-                    <p>Join our community of book lovers.</p>
-                </div>
-
-                <!-- Register form -->
-                <form id="registerform" method="post">
-
-                    {% csrf_token %}
-
-                    <!-- Username -->
-                    <div class="input-wrapper">
-                        <label for="{{ form.user_name.id_for_label }}">Username</label>
-                        <div class="input-box">
-                            <span>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="8" r="4"/>
-                                    <path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7"/>
-                                </svg>
-                            </span>
-                            {{ form.user_name }}
-                        </div>
-                    </div>
-
-                    <!-- Email -->
-                    <div class="input-wrapper">
-                        <label for="{{ form.email.id_for_label }}">Email</label>
-                        <div class="input-box">
-                            <span>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="5" width="18" height="14" rx="2.5"/>
-                                    <path d="m4 7 8 6 8-6"/>
-                                </svg>
-                            </span>
-                            {{ form.email }}
-                        </div>
-                    </div>
-
-                    <!-- Password -->
-                    <div class="input-wrapper">
-                        <label for="{{ form.password.id_for_label }}">Password</label>
-                        <div class="input-box">
-                            <span>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="4.5" y="10.5" width="15" height="10" rx="2.2"/>
-                                    <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>
-                                </svg>
-                            </span>
-                            {{ form.password }}
-                        </div>
-                    </div>
-
-                    <!-- Confirm password -->
-                    <div class="input-wrapper">
-                        <label for="{{ form.confirm_password.id_for_label }}">Confirm Password</label>
-                        <div class="input-box">
-                            <span>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="4.5" y="10.5" width="15" height="10" rx="2.2"/>
-                                    <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>
-                                </svg>
-                            </span>
-                            {{ form.confirm_password }}
-                        </div>
-                    </div>
-
-                    <!-- Error -->
-                    <p id="error" class="error-message">
-                        {% if form.errors %}
-                            {% for field in form %}
-                                {% for error in field.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            {% endfor %}
-                            {% for error in form.non_field_errors %}
-                                {{ error }}
-                            {% endfor %}
-                        {% endif %}
-                    </p>
-
-                    <!-- Register -->
-                    <button type="submit" class="register-button">
-                        Create Account
-                        <span>&rarr;</span>
-                    </button>
-
-                </form>
-
-
-                <!-- Login -->
-                <div class="login-section">
-                    <span>Already have an account?</span>
-                    <a href="{% url 'login' %}">Login</a>
-                </div>
-
-                <div class="terms">
-                    By creating an account, you agree to our
-                    <span>Terms &amp; Conditions</span>
-                </div>
+                {% for error in form.email.errors %}
+                    <p class="error-message">{{ error }}</p>
+                {% endfor %}
 
             </div>
 
-        </section>
+
+            <!-- Password -->
+            <div class="input-wrapper">
+
+                <label for="{{ form.password.id_for_label }}">
+                    Password
+                </label>
+
+                {{ form.password }}
+
+                {% for error in form.password.errors %}
+                    <p class="error-message">{{ error }}</p>
+                {% endfor %}
+
+            </div>
+
+
+            <!-- Non-field errors -->
+            {% for error in form.non_field_errors %}
+                <p class="error-message">
+                    {{ error }}
+                </p>
+            {% endfor %}
+
+
+            <button type="submit" class="register-button">
+                Create Account
+            </button>
+
+        </form>
+
+
+        <div class="login-section">
+            <span>Already have an account?</span>
+
+            <a href="{% url 'login' %}">
+                Login
+            </a>
+        </div>
 
     </div>
 
-    <script src="{% static 'book_review_js/register.js' %}"></script>
-    <script>
-        // Password show/hide toggles. Safe to merge into register.js later.
-        document.querySelectorAll(".toggle-password").forEach(function (btn) {
-            btn.addEventListener("click", function () {
-                var input = document.getElementById(btn.dataset.target);
-                var showing = input.type === "text";
-                input.type = showing ? "password" : "text";
-                btn.classList.toggle("is-visible", !showing);
-                btn.setAttribute("aria-label", showing ? "Show password" : "Hide password");
-            });
-        });
-    </script>
+</div>
 
 </body>
-
 </html>

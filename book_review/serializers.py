@@ -1,30 +1,25 @@
 from rest_framework import serializers
 from .models import UserProfile, Book_Review_forms, Book, Category
 from better_profanity import profanity
-from rest_framework.validators import UniqueValidator, ValidationError
+from rest_framework.validators import UniqueValidator
 from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
 
 # --------------------------Register Serializer---------------------------
 class RegisterSerializer(serializers.Serializer):
     user_name = serializers.CharField(max_length=100, required=True)
-    email = serializers.EmailField(validators=[UniqueValidator(queryset=UserProfile.objects.all(), message="User with this email already exsits !")])
+    email = serializers.EmailField(validators=[UniqueValidator(queryset=UserProfile.objects.all(), message="Unable to register with the provided details.")])
     password = serializers.CharField(write_only=True)
 
-    def validate(self, attrs):
-        user_name = attrs.get('user_name')
-        if not user_name:
-            raise serializers.ValidationError({"user_name": "Username is required."})
-        attrs['user_name'] = user_name
-        return attrs
+    def validate_password(self, password):
+        validate_password(password)
+        return password
 
     def create(self, validated_data):
-        user_name = validated_data.get('user_name')
-        email = validated_data['email']
-        password = validated_data['password']
         return UserProfile.objects.create_user(
-            user_name=user_name,
-            email=email,
-            password=password
+            user_name=validated_data["user_name"],
+            email=validated_data["email"],
+            password=validated_data["password"],
         )
 
 # -------------------------Login Serializer-----------------------------
@@ -40,17 +35,15 @@ class LoginSerializer(serializers.Serializer):
 
 # --------------------------Home-page Serializer---------------------------
 class HomepageSerializer(serializers.ModelSerializer):
-    user = serializers.SerializerMethodField()
-    book = serializers.SerializerMethodField()
-    book_title = serializers.CharField(source='book.title', read_only=True)
+    user_name = serializers.CharField(source='user.user_name', default='Anonymous', read_only=True)
+    book_title = serializers.CharField(source='book.title', default='Unknown Book', read_only=True)
     author = serializers.CharField(source='book.author', read_only=True)
 
     class Meta:
         model = Book_Review_forms
         fields = [
             'id',
-            'user',
-            'book',
+            'user_name',
             'book_title',
             'author',
             'rating',
@@ -68,10 +61,9 @@ class HomepageSerializer(serializers.ModelSerializer):
 
 
 # --------------------------Profile Serializer---------------------------
-class ProfileSerializer(serializers.Serializer):
-    user_name = serializers.CharField()
-    username = serializers.CharField(source='user_name', read_only=True)
-    email = serializers.EmailField()
+class ProfileSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='user.user_name', default='Anonymous', read_only=True)
+    email = serializers.EmailField(source='user.email', default='Anonymous', read_only=True)
     date_joined = serializers.DateTimeField()
     reviews_count = serializers.IntegerField()
 
@@ -164,3 +156,8 @@ class ReviewImproveSerializer(serializers.Serializer):
         return value
     
 
+# -------------------------------Search View Serializer----------------------------------
+class SearchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['user_name', 'email']

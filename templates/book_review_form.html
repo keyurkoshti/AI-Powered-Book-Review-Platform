@@ -50,18 +50,19 @@
             </p>
         {% endfor %}
     {% endif %}
+    <p id="ai-improve-status" aria-live="polite"></p>
     <br>    
   <div class="button-group">
     <a href="{% url 'home' %}" class="back-btn">← Back to Home</a>
-    <button type="submit" name="action" value="improve">✨ Improve with AI</button>
-    <button type="submit" name="action", value="save">Save</button>
+    <button
+      type="button"
+      id="ai-improve-btn"
+    >
+      ✨ Improve with AI
+    </button>
+    <button type="submit" name="action" value="save">Save</button>
   </div>
   </form>
-
-  {% comment %} 
-  <script src="{% static 'book_review_js/auth.js' %}"></script>
-  <script src="{% static 'book_review_js/review_form.js' %}"></script>
-  {% endcomment %}
 
 </body>
 </html>

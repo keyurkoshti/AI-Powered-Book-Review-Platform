@@ -13,3 +13,5 @@ notes.txt
 celerybeat-schedule.bak
 celerybeat-schedule.dat 
 celerybeat-schedule.dir
+model-flow.drawio
+ADD_BOOK_SUBSCRIPTION_DESIGN.md
